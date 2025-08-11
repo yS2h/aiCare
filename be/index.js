@@ -14,6 +14,8 @@ app.use(express.json());
 
 const healthRouter = require("./routes/health"); // 새로 만들 파일
 app.use("/api/health", healthRouter);
+const versionRouter = require("./routes/version");
+app.use("/api/version", versionRouter);
 
 app.get("/", (req, res) => {
   res.send("초기 세팅 완료");
