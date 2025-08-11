@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const { logger } = require("./middlewares/logger");
 const { corsOptions } = require("./config/cors");
+const { ApiError } = require("./utils/ApiError");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,7 +28,21 @@ app.use((req, res, next) => {
 
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(500).json({ message: "Internal Server Error" });
+
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      code: err.statusCode,
+      details: err.details,
+    });
+  }
+
+  res.status(500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+    code: 500,
+  });
 });
 
 app.listen(PORT, () => {
