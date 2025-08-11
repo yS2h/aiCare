@@ -2,10 +2,14 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+const { logger } = require("./middlewares/logger");
+const { corsOptions } = require("./config/cors");
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(logger);
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const healthRouter = require("./routes/health"); // 새로 만들 파일
