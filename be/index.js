@@ -9,14 +9,18 @@ const { ApiError } = require("./utils/ApiError");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+app.use(express.json());
 app.use(logger);
 app.use(cors(corsOptions));
-app.use(express.json());
 
-const healthRouter = require("./routes/health"); // 새로 만들 파일
+const healthRouter = require("./routes/health");
 app.use("/api/health", healthRouter);
 const versionRouter = require("./routes/version");
 app.use("/api/version", versionRouter);
+const authRouter = require("./routes/auth");
+app.use("/api/auth", authRouter);
+const meRouter = require("./routes/me");
+app.use("/api/me", meRouter);
 
 app.get("/", (req, res) => {
   res.send("초기 세팅 완료");
