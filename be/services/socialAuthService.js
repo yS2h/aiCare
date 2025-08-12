@@ -4,7 +4,7 @@ const users = new Map();
 
 /**
  * Upsert a social user.
- * @param {{provider: 'google'|'kakao'|string, provider_id: string, name: string, profile_image_url?: string}} input
+ * @param {{provider: 'kakao', provider_id: string, name: string, profile_image_url?: string}} input
  * @returns {User}
  */
 function upsertSocialUser(input) {
