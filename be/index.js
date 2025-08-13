@@ -14,14 +14,30 @@ app.use(express.json());
 app.use(logger);
 app.use(cors(corsOptions));
 
-const healthRouter = require("./routes/health");
-app.use("/api/health", healthRouter);
-const versionRouter = require("./routes/version");
-app.use("/api/version", versionRouter);
 const authRouter = require("./routes/auth");
 app.use("/api/auth", authRouter);
+
+const healthRouter = require("./routes/health");
+app.use("/api/health", healthRouter);
+
+const versionRouter = require("./routes/version");
+app.use("/api/version", versionRouter);
+
 const meRouter = require("./routes/me");
 app.use("/api/me", meRouter);
+
+const swaggerUi = require("swagger-ui-express");
+const { getOpenApiDocument } = require("./docs/openapi");
+
+app.get("/openapi.json", (_, res) => res.json(getOpenApiDocument()));
+
+app.use(
+  "/docs",
+  swaggerUi.serve,
+  swaggerUi.setup(undefined, {
+    swaggerOptions: { url: "/openapi.json" },
+  })
+);
 
 app.get("/", (req, res) => {
   res.send("초기 세팅 완료");
