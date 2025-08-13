@@ -66,15 +66,16 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-
+// DB 준비가 완료된 이후에만 서버를 시작한다
 (async () => {
   try {
     await initDb();
     await ping();
     console.log("[DB] init & ping OK");
+
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
   } catch (e) {
     console.error("[DB] 초기화 실패:", e);
     process.exit(1);
