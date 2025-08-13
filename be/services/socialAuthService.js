@@ -1,17 +1,12 @@
+const { v4: uuidv4 } = require("uuid");
 const { query } = require("../providers/db");
 
-/**
- * Upsert a social user to Postgres
- * @param {{provider: 'kakao', provider_id: string, name: string, profile_image_url?: string}} input
- * @returns {Promise<{
- *   id: string, provider: 'kakao', provider_id: string, name: string,
- *   profile_image_url: string, created_at: string
- * }>}
- */
 async function upsertSocialUser(input) {
+  const id = uuidv4();
+
   const sql = `
-    INSERT INTO users (provider, provider_id, name, profile_image_url)
-    VALUES ($1, $2, $3, COALESCE($4, ''))
+    INSERT INTO users (id, provider, provider_id, name, profile_image_url)
+    VALUES ($1, $2, $3, $4, COALESCE($5, ''))
     ON CONFLICT (provider, provider_id)
     DO UPDATE SET
       name = EXCLUDED.name,
@@ -24,6 +19,7 @@ async function upsertSocialUser(input) {
   `;
 
   const params = [
+    id,
     "kakao",
     input.provider_id,
     input.name ?? "",
