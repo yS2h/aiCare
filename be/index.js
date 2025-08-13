@@ -5,6 +5,7 @@ require("dotenv").config();
 const { logger } = require("./middlewares/logger");
 const { corsOptions } = require("./config/cors");
 const { ApiError } = require("./utils/ApiError");
+const { error: errorResponse } = require("./utils/response");
 const { init: initDb, ping } = require("./providers/db");
 
 const app = express();
@@ -44,26 +45,23 @@ app.get("/", (req, res) => {
 });
 
 app.use((req, res, next) => {
-  res.status(404).json({ message: "Not Found" });
+  res.status(404).json(errorResponse("Not Found", 404));
 });
 
 app.use((err, req, res, next) => {
   console.error(err);
 
   if (err instanceof ApiError) {
-    return res.status(err.statusCode).json({
-      success: false,
-      message: err.message,
-      code: err.statusCode,
-      details: err.details,
-    });
+    return res
+      .status(err.statusCode)
+      .json(errorResponse(err.message, err.statusCode, err.details));
   }
 
-  res.status(500).json({
-    success: false,
-    message: err.message || "Internal Server Error",
-    code: 500,
-  });
+  const isProd = process.env.NODE_ENV === "production";
+  const message = isProd
+    ? "Internal Server Error"
+    : err.message || "Internal Server Error";
+  res.status(500).json(errorResponse(message, 500));
 });
 
 // DB 준비가 완료된 이후에만 서버를 시작한다
