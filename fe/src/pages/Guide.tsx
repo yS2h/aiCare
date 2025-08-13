@@ -1,3 +1,9 @@
+import TopBar from '@/components/Topbar'
+
 export default function Guide() {
-  return <div className="text-xl font-bold p-4">종합가이드 페이지</div>
+  return (
+    <div className="min-h-screen">
+      <TopBar title="종합 성장 가이드" variant="light" />
+    </div>
+  )
 }

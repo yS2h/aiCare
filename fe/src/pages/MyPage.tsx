@@ -1,3 +1,9 @@
-export default function Mypage() {
-  return <div className="text-xl font-bold p-4">마이페이지</div>
+import TopBar from '@/components/Topbar'
+
+export default function MyPage() {
+  return (
+    <div className="min-h-screen">
+      <TopBar title="마이페이지" variant="light" />
+    </div>
+  )
 }
