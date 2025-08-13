@@ -8,7 +8,9 @@ import { registerSW } from 'virtual:pwa-register'
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <div className="app-frame shadow-md">
+        <App />
+      </div>
     </BrowserRouter>
   </React.StrictMode>
 )
