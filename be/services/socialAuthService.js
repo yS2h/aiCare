@@ -1,39 +1,37 @@
-const { v4: uuidv4 } = require("uuid");
 const { query } = require("../providers/db");
 
 /**
  * Upsert a social user to Postgres
- * @param {{provider: 'kakao'|'google', provider_id: string, name: string, profile_image_url?: string}} input
- * @returns {Promise<User>}
+ * @param {{provider: 'kakao', provider_id: string, name: string, profile_image_url?: string}} input
+ * @returns {Promise<{
+ *   id: string, provider: 'kakao', provider_id: string, name: string,
+ *   profile_image_url: string, created_at: string
+ * }>}
  */
 async function upsertSocialUser(input) {
-  const id = uuidv4();
+  const sql = `
+    INSERT INTO users (provider, provider_id, name, profile_image_url)
+    VALUES ($1, $2, $3, COALESCE($4, ''))
+    ON CONFLICT (provider, provider_id)
+    DO UPDATE SET
+      name = EXCLUDED.name,
+      profile_image_url = CASE
+        WHEN EXCLUDED.profile_image_url IS NULL OR EXCLUDED.profile_image_url = ''
+          THEN users.profile_image_url
+        ELSE EXCLUDED.profile_image_url
+      END
+    RETURNING id, provider, provider_id, name, profile_image_url, created_at;
+  `;
 
-  const res = await query(
-    `
-    insert into users (id, provider, provider_id, name, profile_image_url)
-    values ($1, $2, $3, $4, coalesce($5, ''))
-    on conflict (provider, provider_id)
-    do update set
-      name = excluded.name,
-      profile_image_url = case
-        when excluded.profile_image_url is null or excluded.profile_image_url = ''
-          then users.profile_image_url
-        else excluded.profile_image_url
-      end,
-      updated_at = now()
-    returning id, provider, provider_id, name, profile_image_url, created_at, updated_at
-    `,
-    [
-      id,
-      input.provider,
-      input.provider_id,
-      input.name,
-      input.profile_image_url ?? "",
-    ]
-  );
+  const params = [
+    "kakao",
+    input.provider_id,
+    input.name ?? "",
+    input.profile_image_url ?? "",
+  ];
 
-  return res.rows[0];
+  const { rows } = await query(sql, params);
+  return rows[0];
 }
 
 module.exports = { upsertSocialUser };
