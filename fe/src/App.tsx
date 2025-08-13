@@ -7,6 +7,7 @@ import BoneAge from './pages/BoneAge'
 import Spine from './pages/Spine'
 import Guide from './pages/Guide'
 import Consulting from './pages/Consulting'
+import Information from './pages/information'
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <Route path="/mypage" element={<MyPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/growth-history" element={<GrowthHistory />} />
+      <Route path="/information" element={<Information />} />
       <Route path="/bone-age" element={<BoneAge />} />
       <Route path="/spine" element={<Spine />} />
       <Route path="/guide" element={<Guide />} />
