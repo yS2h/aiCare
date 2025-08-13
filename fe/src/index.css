@@ -14,10 +14,10 @@
   min-height: 100dvh;
   background: #fff;
   padding: 0.5rem;
-  padding-left: max(0.5rem, env(safe-area-inset-left));
-  padding-right: max(0.5rem, env(safe-area-inset-right));
-  padding-top: max(0.5rem, env(safe-area-inset-top));
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
 @theme {
