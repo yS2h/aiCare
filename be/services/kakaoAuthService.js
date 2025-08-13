@@ -1,9 +1,12 @@
 const { BadRequestError } = require("../utils/ApiError");
 
 async function getTokenInfo(accessToken) {
-  const res = await fetch("https://kapi.kakao.com/v1/user/access_token_info", {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  const res = await fetchWithTimeout(
+    "https://kapi.kakao.com/v1/user/access_token_info",
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
   if (!res.ok) {
     let body;
     try {
@@ -20,7 +23,7 @@ async function getTokenInfo(accessToken) {
 }
 
 async function getUserMe(accessToken) {
-  const res = await fetch("https://kapi.kakao.com/v2/user/me", {
+  const res = await fetchWithTimeout("https://kapi.kakao.com/v2/user/me", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) {
@@ -49,6 +52,31 @@ async function getUserMe(accessToken) {
     "";
 
   return { id, nickname, profile_image_url };
+}
+
+// fetch 타임아웃 + 간단 재시도 래퍼
+async function fetchWithTimeout(
+  url,
+  options = {},
+  { timeoutMs = 8000, retries = 1 } = {}
+) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timer);
+      // 5xx는 재시도 대상
+      if (res.status >= 500 && attempt < retries) {
+        continue;
+      }
+      return res;
+    } catch (err) {
+      clearTimeout(timer);
+      if (attempt < retries) continue;
+      throw err;
+    }
+  }
 }
 
 module.exports = { getTokenInfo, getUserMe };

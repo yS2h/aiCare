@@ -2,11 +2,7 @@ const jwt = require("jsonwebtoken");
 
 function signJwt(user) {
   const payload = {
-    id: user.id,
-    provider: user.provider,
-    provider_id: user.provider_id,
-    name: user.name,
-    profile_image_url: user.profile_image_url,
+    sub: user.id,
   };
   return jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES || "7d",
@@ -23,7 +19,8 @@ function requireAuth(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    // 호환성: 기존 코드가 req.user.id를 참조할 수 있으므로 매핑 추가
+    req.user = { id: decoded.sub };
     next();
   } catch (e) {
     return res
