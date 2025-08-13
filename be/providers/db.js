@@ -4,12 +4,22 @@ if (!process.env.DATABASE_URL) {
   console.warn("[WARN] DATABASE_URL is not set");
 }
 
+const baseUrl = process.env.DATABASE_URL;
+const withTimezone =
+  baseUrl +
+  (baseUrl.includes("?") ? "&" : "?") +
+  "options=-c%20timezone%3DAsia%2FSeoul";
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: withTimezone,
   ssl: { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
+});
+
+pool.on("connect", (client) => {
+  client.query("SET TIME ZONE 'Asia/Seoul'").catch(() => {});
 });
 
 async function ping() {
@@ -18,7 +28,6 @@ async function ping() {
 }
 
 async function init() {
-  // 한방에 DDL 실행
   const ddl = `
   BEGIN;
 
