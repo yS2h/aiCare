@@ -14,9 +14,7 @@ const {
 
 const router = Router();
 
-const OAUTH_SUCCESS_REDIRECT =
-  process.env.OAUTH_SUCCESS_REDIRECT ||
-  "http://localhost:3000/oauth/kakao-result";
+const OAUTH_SUCCESS_REDIRECT = process.env.OAUTH_SUCCESS_REDIRECT;
 
 defineRoute(router, {
   method: "get",
