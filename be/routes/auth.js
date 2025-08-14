@@ -76,9 +76,27 @@ defineRoute(router, {
       return res.redirect(u.toString());
     };
 
+    const redirectToFrontend = (success = true) => {
+      if (success) {
+        res.cookie("authToken", appJwt, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+        res.cookie("authProvider", "kakao", {
+          httpOnly: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+      }
+      return res.redirect(OAUTH_SUCCESS_REDIRECT || "http://localhost:5173/");
+    };
+
     if (!query) {
       console.log("query가 undefined입니다");
-      return redirectWithHash({ error: "invalid_request" });
+      return redirectToFrontend(false);
     }
 
     if (!query.code || !query.state) {
@@ -86,7 +104,7 @@ defineRoute(router, {
         code: query.code,
         state: query.state,
       });
-      return redirectWithHash({ error: "missing_required_params" });
+      return redirectToFrontend(false);
     }
 
     console.log("파라미터 검증 성공:", {
@@ -95,9 +113,7 @@ defineRoute(router, {
     });
 
     if (query.error) {
-      return redirectWithHash({
-        error: String(query.error_description || query.error),
-      });
+      return redirectToFrontend(false);
     }
 
     try {
@@ -105,7 +121,7 @@ defineRoute(router, {
       console.log("state JWT 검증 성공");
     } catch (e) {
       console.log("state JWT 검증 실패:", e.message);
-      return redirectWithHash({ error: "bad_state" });
+      return redirectToFrontend(false);
     }
 
     let tokenRes;
@@ -114,12 +130,12 @@ defineRoute(router, {
       console.log("카카오 액세스 토큰 교환 성공");
     } catch (e) {
       console.log("카카오 액세스 토큰 교환 실패:", e.message);
-      return redirectWithHash({ error: "token_exchange_failed" });
+      return redirectToFrontend(false);
     }
     const accessToken = tokenRes && tokenRes.access_token;
     if (!accessToken) {
       console.log("액세스 토큰이 없습니다");
-      return redirectWithHash({ error: "no_access_token" });
+      return redirectToFrontend(false);
     }
 
     let me;
@@ -128,7 +144,7 @@ defineRoute(router, {
       console.log("카카오 사용자 정보 조회 성공:", me.id);
     } catch (e) {
       console.log("카카오 사용자 정보 조회 실패:", e.message);
-      return redirectWithHash({ error: "user_info_failed" });
+      return redirectToFrontend(false);
     }
 
     let user;
@@ -142,7 +158,7 @@ defineRoute(router, {
       console.log("사용자 DB 저장 성공:", user.id);
     } catch (e) {
       console.log("사용자 DB 저장 실패:", e.message);
-      return redirectWithHash({ error: "upsert_failed" });
+      return redirectToFrontend(false);
     }
     let appJwt;
     try {
@@ -150,14 +166,11 @@ defineRoute(router, {
       console.log("JWT 토큰 발급 성공");
     } catch (e) {
       console.log("JWT 토큰 발급 실패:", e.message);
-      return redirectWithHash({ error: "issue_app_jwt_failed" });
+      return redirectToFrontend(false);
     }
 
     console.log("카카오 로그인 완료, 프론트로 리다이렉트");
-    return redirectWithHash({
-      token: appJwt,
-      provider: "kakao",
-    });
+    return redirectToFrontend(true);
   },
 });
 
