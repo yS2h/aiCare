@@ -15,7 +15,6 @@ function error(message = "error", code = 500, details = null) {
   };
 }
 
-// auth.js와 호환되는 에러 응답 형식
 function authError(message, code = 401) {
   return {
     success: false,

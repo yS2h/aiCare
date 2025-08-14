@@ -72,7 +72,6 @@ async function fetchWithTimeout(
     try {
       const res = await fetch(url, { ...options, signal: controller.signal });
       clearTimeout(timer);
-      // 5xx는 재시도 대상
       if (res.status >= 500 && attempt < retries) {
         continue;
       }

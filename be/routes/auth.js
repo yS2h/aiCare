@@ -35,9 +35,7 @@ defineRoute(router, {
     400: { description: "유효성 검증 실패" },
   },
   handler: async ({ body }) => {
-    // 1) 액세스 토큰 유효성 검증
     await getTokenInfo(body.access_token);
-    // 2) 사용자 정보 조회
     const me = await getUserMe(body.access_token);
     // 3) DB upsert
     const user = await upsertSocialUser({
@@ -46,7 +44,6 @@ defineRoute(router, {
       name: me.nickname,
       profile_image_url: me.profile_image_url ?? "",
     });
-    // 4) JWT 발급
     const token = signJwt(user);
     return { user, token };
   },

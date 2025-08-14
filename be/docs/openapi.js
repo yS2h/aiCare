@@ -5,7 +5,6 @@ const {
 } = require("@asteasolutions/zod-to-openapi");
 const { z } = require("zod");
 
-// zod에 OpenAPI 메타데이터 확장 (선택적이지만 추후 커스터마이징에 유용)
 extendZodWithOpenApi(z);
 
 const registry = new OpenAPIRegistry();
