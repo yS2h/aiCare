@@ -72,6 +72,10 @@ defineRoute(router, {
       return res.redirect(u.toString());
     };
 
+    if (!query) {
+      return redirectWithHash({ error: "invalid_request" });
+    }
+
     if (query.error) {
       return redirectWithHash({
         error: String(query.error_description || query.error),
