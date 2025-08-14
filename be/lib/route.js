@@ -48,7 +48,11 @@ function defineRoute(
     try {
       const parsed = {
         body: request.body ? request.body.parse(req.body) : undefined,
-        query: request.query ? request.query.parse(req.query) : req.query,
+        query: request.query
+          ? req.query
+            ? request.query.parse(req.query)
+            : {}
+          : req.query,
       };
       const out = await handler(parsed, req, res);
       if (out !== undefined && !res.headersSent) res.json(out);

@@ -60,11 +60,13 @@ defineRoute(router, {
   docPath: "/api/auth/kakao/callback",
   summary: "카카오 OAuth 콜백 처리",
   tags: ["Auth"],
-  request: { query: KakaoCallbackReq },
   responses: {
     302: { description: "프론트로 리다이렉트(#token 또는 #error)" },
   },
-  handler: async ({ query }, req, res) => {
+  handler: async (ctx, req, res) => {
+    // query 파라미터를 직접 req.query에서 가져오기
+    const query = req.query;
+
     const redirectWithHash = (kv) => {
       const u = new URL(OAUTH_SUCCESS_REDIRECT);
       const sp = new URLSearchParams(kv);
@@ -74,6 +76,11 @@ defineRoute(router, {
 
     if (!query) {
       return redirectWithHash({ error: "invalid_request" });
+    }
+
+    // code와 state 파라미터 검증
+    if (!query.code || !query.state) {
+      return redirectWithHash({ error: "missing_required_params" });
     }
 
     if (query.error) {
