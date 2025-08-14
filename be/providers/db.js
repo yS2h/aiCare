@@ -1,7 +1,8 @@
 const { Pool } = require("pg");
 
 if (!process.env.DATABASE_URL) {
-  console.warn("[WARN] DATABASE_URL is not set");
+  console.error("[ERROR] DATABASE_URL is not set");
+  process.exit(1);
 }
 
 const baseUrl = process.env.DATABASE_URL;
@@ -12,7 +13,10 @@ const withTimezone =
 
 const pool = new Pool({
   connectionString: withTimezone,
-  ssl: { rejectUnauthorized: false },
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false,
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
@@ -22,9 +26,18 @@ pool.on("connect", (client) => {
   client.query("SET TIME ZONE 'Asia/Seoul'").catch(() => {});
 });
 
+pool.on("error", (err) => {
+  console.error("[DB] Unexpected error on idle client", err);
+});
+
 async function ping() {
-  const r = await pool.query("select 1 as ok");
-  return r.rows[0].ok === 1;
+  try {
+    const r = await pool.query("select 1 as ok");
+    return r.rows[0].ok === 1;
+  } catch (error) {
+    console.error("[DB] Ping failed:", error.message);
+    return false;
+  }
 }
 
 async function init() {

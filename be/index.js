@@ -2,6 +2,14 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+const requiredEnvVars = ["JWT_SECRET", "DATABASE_URL"];
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`[ERROR] Required environment variable ${envVar} is not set`);
+    process.exit(1);
+  }
+}
+
 const { logger } = require("./middlewares/logger");
 const { corsOptions } = require("./config/cors");
 const { ApiError } = require("./utils/ApiError");
@@ -64,18 +72,40 @@ app.use((err, req, res, next) => {
   res.status(500).json(errorResponse(message, 500));
 });
 
-// DB 준비가 완료된 이후에만 서버를 시작한다
 (async () => {
-  try {
-    await initDb();
-    await ping();
-    console.log("[DB] init & ping OK");
+  const maxRetries = 3;
+  let retryCount = 0;
 
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-    });
-  } catch (e) {
-    console.error("[DB] 초기화 실패:", e);
-    process.exit(1);
+  while (retryCount < maxRetries) {
+    try {
+      await initDb();
+      const pingResult = await ping();
+
+      if (!pingResult) {
+        throw new Error("Database ping failed");
+      }
+
+      console.log("[DB] init & ping OK");
+      break;
+    } catch (e) {
+      retryCount++;
+      console.error(
+        `[DB] 초기화 실패 (시도 ${retryCount}/${maxRetries}):`,
+        e.message
+      );
+
+      if (retryCount >= maxRetries) {
+        console.error("[DB] 최대 재시도 횟수 초과. 서버를 종료합니다.");
+        process.exit(1);
+      }
+
+      // 5초 후 재시도
+      console.log(`[DB] 5초 후 재시도합니다...`);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
   }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 })();

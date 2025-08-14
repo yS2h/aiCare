@@ -1,6 +1,11 @@
 const jwt = require("jsonwebtoken");
+const { authError } = require("../utils/response");
 
 function signJwt(user) {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET environment variable is not set");
+  }
+
   const payload = {
     sub: user.id,
   };
@@ -10,22 +15,19 @@ function signJwt(user) {
 }
 
 function requireAuth(req, res, next) {
+  if (!process.env.JWT_SECRET) {
+    return res.status(500).json(authError("Server configuration error", 500));
+  }
+
   const auth = req.headers.authorization || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
-  if (!token)
-    return res
-      .status(401)
-      .json({ success: false, message: "No token", code: 401 });
+  if (!token) return res.status(401).json(authError("No token", 401));
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // 호환성: 기존 코드가 req.user.id를 참조할 수 있으므로 매핑 추가
-    req.user = { id: decoded.sub };
     next();
   } catch (e) {
-    return res
-      .status(401)
-      .json({ success: false, message: "Invalid token", code: 401 });
+    return res.status(401).json(authError("Invalid token", 401));
   }
 }
 

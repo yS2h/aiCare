@@ -1,5 +1,12 @@
 const { BadRequestError } = require("../utils/ApiError");
 
+let fetch;
+if (typeof globalThis.fetch === "undefined") {
+  fetch = require("node-fetch");
+} else {
+  fetch = globalThis.fetch;
+}
+
 async function getTokenInfo(accessToken) {
   const res = await fetchWithTimeout(
     "https://kapi.kakao.com/v1/user/access_token_info",
@@ -54,7 +61,6 @@ async function getUserMe(accessToken) {
   return { id, nickname, profile_image_url };
 }
 
-// fetch 타임아웃 + 간단 재시도 래퍼
 async function fetchWithTimeout(
   url,
   options = {},

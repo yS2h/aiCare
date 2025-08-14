@@ -10,7 +10,13 @@ const allowedOrigins = new Set(parseOrigins());
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
+    if (process.env.NODE_ENV === "production" && !origin) {
+      return callback(new Error("Origin is required in production"), false);
+    }
+
+    if (!origin && process.env.NODE_ENV !== "production") {
+      return callback(null, true);
+    }
 
     if (allowedOrigins.has(origin)) {
       return callback(null, true);
