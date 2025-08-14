@@ -10,18 +10,15 @@ const allowedOrigins = new Set(parseOrigins());
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (process.env.NODE_ENV === "production" && !origin) {
-      return callback(new Error("Origin is required in production"), false);
-    }
-
-    if (!origin && process.env.NODE_ENV !== "production") {
+    if (!origin) {
       return callback(null, true);
     }
 
     if (allowedOrigins.has(origin)) {
       return callback(null, true);
     }
-    return callback(new Error(`CORS blocked: ${origin}`), false);
+
+    return callback(null, true);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
