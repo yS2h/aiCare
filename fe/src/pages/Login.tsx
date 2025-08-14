@@ -3,8 +3,8 @@ import React from 'react'
 const Login: React.FC = () => {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden text-white">
-      <div className="absolute inset-0 bg-[#141b24]" />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a2230] via-[#141c26] to-[#0f1720] opacity-95" />
+      <div className="absolute inset-0 bg-main" />
+      <div className="absolute inset-0 bg-gradient-to-b from-gray1 via-main to-gray1 opacity-95" />
 
       <div className="relative z-10 text-center w-full max-w-md px-6 mt-60">
         <h1 className="text-3xl font-bold tracking-wide">aiCare</h1>

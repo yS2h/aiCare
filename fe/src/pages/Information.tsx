@@ -24,6 +24,10 @@ export default function Information() {
     alert('aiCare 서비스를 시작합니다!')
   }
 
+  const inputStyle = {
+    borderColor: '#cdcdcd'
+  }
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <div className="flex-1 max-w-md mx-auto w-full px-4 pt-8">
@@ -45,7 +49,12 @@ export default function Information() {
               name="childName"
               value={formData.childName}
               onChange={handleInputChange}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2.5 border rounded-md focus:outline-none focus:ring-1"
+              style={inputStyle}
+              onFocus={e => {
+                e.target.style.borderColor = '#cdcdcd'
+                e.target.style.setProperty('--tw-ring-color', '#cdcdcd')
+              }}
               placeholder="아이 이름을 입력하세요"
             />
           </div>
@@ -57,7 +66,20 @@ export default function Information() {
               name="childBirth"
               value={formData.childBirth}
               onChange={handleInputChange}
-              className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2.5 border rounded-md focus:outline-none focus:ring-1 text-gray-400"
+              style={inputStyle}
+              onFocus={e => {
+                e.target.style.borderColor = '#cdcdcd'
+                e.target.style.setProperty('--tw-ring-color', '#cdcdcd')
+                e.target.classList.remove('text-gray-400')
+                e.target.classList.add('text-gray-900')
+              }}
+              onBlur={e => {
+                if (!e.target.value) {
+                  e.target.classList.remove('text-gray-900')
+                  e.target.classList.add('text-gray-400')
+                }
+              }}
             />
           </div>
 
@@ -69,7 +91,12 @@ export default function Information() {
                 name="childHeight"
                 value={formData.childHeight}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2.5 border rounded-md focus:outline-none focus:ring-1"
+                style={inputStyle}
+                onFocus={e => {
+                  e.target.style.borderColor = '#cdcdcd'
+                  e.target.style.setProperty('--tw-ring-color', '#cdcdcd')
+                }}
                 placeholder="cm"
               />
             </div>
@@ -80,7 +107,12 @@ export default function Information() {
                 name="childWeight"
                 value={formData.childWeight}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2.5 border rounded-md focus:outline-none focus:ring-1"
+                style={inputStyle}
+                onFocus={e => {
+                  e.target.style.borderColor = '#cdcdcd'
+                  e.target.style.setProperty('--tw-ring-color', '#cdcdcd')
+                }}
                 placeholder="kg"
               />
             </div>
@@ -94,7 +126,12 @@ export default function Information() {
                 name="fatherHeight"
                 value={formData.fatherHeight}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2.5 border rounded-md focus:outline-none focus:ring-1"
+                style={inputStyle}
+                onFocus={e => {
+                  e.target.style.borderColor = '#cdcdcd'
+                  e.target.style.setProperty('--tw-ring-color', '#cdcdcd')
+                }}
                 placeholder="cm"
               />
             </div>
@@ -105,7 +142,12 @@ export default function Information() {
                 name="motherHeight"
                 value={formData.motherHeight}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2.5 border rounded-md focus:outline-none focus:ring-1"
+                style={inputStyle}
+                onFocus={e => {
+                  e.target.style.borderColor = '#cdcdcd'
+                  e.target.style.setProperty('--tw-ring-color', '#cdcdcd')
+                }}
                 placeholder="cm"
               />
             </div>
