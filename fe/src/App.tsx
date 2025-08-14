@@ -8,14 +8,8 @@ import Spine from './pages/Spine'
 import Guide from './pages/Guide'
 import Consulting from './pages/Consulting'
 import Information from './pages/Information'
-import BottomNav from './components/BottomNav'
 
 function AppContent() {
-  const location = useLocation()
-
-  // information과 Login 페이지에서는 BottomNav 숨기기
-  const shouldShowBottomNav = !['/information', '/login'].includes(location.pathname)
-
   return (
     <>
       <Routes>
@@ -30,7 +24,6 @@ function AppContent() {
         <Route path="/consulting" element={<Consulting />} />
         <Route path="/information" element={<Information />} />
       </Routes>
-      {shouldShowBottomNav && <BottomNav />}
     </>
   )
 }
