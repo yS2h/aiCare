@@ -10,15 +10,12 @@ const allowedOrigins = new Set(parseOrigins());
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) {
-      return callback(null, true);
-    }
+    if (!origin) return callback(null, true);
 
     if (allowedOrigins.has(origin)) {
       return callback(null, true);
     }
-
-    return callback(null, true);
+    return callback(new Error(`CORS blocked: ${origin}`), false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
