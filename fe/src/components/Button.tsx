@@ -12,15 +12,27 @@ export const ImageButton: React.FC<ImageButtonProps> = ({ text, onClick, classNa
       onClick={onClick}
       className={`
         w-full py-4 px-6
-        !bg-gray-800 hover:!bg-gray-700
-        !text-white !opacity-100
+        text-white
         font-bold text-lg
-        border border-gray-300 rounded-md
+        border rounded-md
         transition-all duration-200
         flex items-center justify-center
-        focus:outline-none focus:ring-2 focus:ring-indigo-500
+        focus:outline-none focus:ring-2 focus:ring-opacity-50
         ${className}
       `}
+      style={
+        {
+          backgroundColor: 'var(--color-main)',
+          borderColor: 'var(--color-main)',
+          '--tw-ring-color': 'var(--color-main)'
+        } as React.CSSProperties
+      }
+      onMouseEnter={e => {
+        e.currentTarget.style.backgroundColor = 'var(--color-grey1)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.backgroundColor = 'var(--color-main)'
+      }}
       type="button"
     >
       {text}
