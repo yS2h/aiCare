@@ -62,11 +62,6 @@ defineRoute(router, {
     302: { description: "프론트로 리다이렉트(#token 또는 #error)" },
   },
   handler: async (ctx, req, res) => {
-    console.log("=== 카카오 콜백 요청 ===");
-    console.log("req.query:", req.query);
-    console.log("req.url:", req.url);
-    console.log("req.headers:", req.headers);
-
     const query = req.query;
 
     const redirectWithHash = (kv) => {
