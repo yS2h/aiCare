@@ -1,17 +1,12 @@
-import React from 'react';
+import React from 'react'
 
-// 이미지에 보이는 버튼과 정확히 일치하는 디자인의 재사용 가능한 버튼
 interface ImageButtonProps {
-  text: string;
-  onClick?: () => void;
-  className?: string;
+  text: string
+  onClick?: () => void
+  className?: string
 }
 
-export const ImageButton: React.FC<ImageButtonProps> = ({ 
-  text, 
-  onClick, 
-  className = '' 
-}) => {
+export const ImageButton: React.FC<ImageButtonProps> = ({ text, onClick, className = '' }) => {
   return (
     <button
       onClick={onClick}
@@ -30,7 +25,7 @@ export const ImageButton: React.FC<ImageButtonProps> = ({
     >
       {text}
     </button>
-  );
-};
+  )
+}
 
-export default ImageButton;
+export default ImageButton
