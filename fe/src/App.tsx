@@ -7,7 +7,7 @@ import BoneAge from './pages/BoneAge'
 import Spine from './pages/Spine'
 import Guide from './pages/Guide'
 import Consulting from './pages/Consulting'
-import Information from './pages/information'
+import Information from './pages/Information'
 
 function App() {
   return (
