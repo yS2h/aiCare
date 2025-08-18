@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { ImageButton } from '../components/Button'
+import BottomNav from '../components/BottomNav'
+import Button from '../components/Button'
 
 export default function Information() {
   const [formData, setFormData] = useState({
@@ -19,17 +20,12 @@ export default function Information() {
     }))
   }
 
-  const handleSubmit = () => {
-    console.log('폼 데이터:', formData)
-    alert('aiCare 서비스를 시작합니다!')
-  }
-
   const inputStyle = {
     borderColor: '#cdcdcd'
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col relative">
       <div className="flex-1 max-w-md mx-auto w-full px-4 pt-8">
         {/* 헤더 */}
         <div className="mb-8">
@@ -107,7 +103,7 @@ export default function Information() {
                 name="childWeight"
                 value={formData.childWeight}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border rounded-md focus:outline-none focus:ring-1"
+                className="w-full px-3 py-2.5 border rounded-md focus:ring-1"
                 style={inputStyle}
                 onFocus={e => {
                   e.target.style.borderColor = '#cdcdcd'
@@ -155,11 +151,10 @@ export default function Information() {
         </form>
       </div>
 
-      <div className="px-4 pb-6 pt-4">
-        <div className="max-w-md mx-auto">
-          <ImageButton text="aiCare 시작하기" onClick={handleSubmit} />
-        </div>
-      </div>
+      {/* ✅ 하단 고정 버튼 */}
+      <Button label="aiCare 시작하기" withBottomNav={false} />
+
+      <BottomNav showBottomNav={false} />
     </div>
   )
 }
