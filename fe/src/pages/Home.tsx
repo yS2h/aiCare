@@ -2,7 +2,7 @@ import TopBar from '@/components/Topbar'
 import { useAuth } from '@/auth/AuthContext'
 
 export default function Home() {
-  const { user, loading, logout } = useAuth()
+  const { loading, logout } = useAuth()
 
   if (loading) {
     return (

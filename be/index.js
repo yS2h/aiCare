@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
-const requiredEnvVars = ["JWT_SECRET", "DATABASE_URL"];
+const requiredEnvVars = ["JWT_SECRET", "DATABASE_URL", "SESSION_SECRET"];
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     console.error(`[ERROR] Required environment variable ${envVar} is not set`);
@@ -12,6 +12,7 @@ for (const envVar of requiredEnvVars) {
 
 const { logger } = require("./middlewares/logger");
 const { corsOptions } = require("./config/cors");
+const { sessionMiddleware } = require("./config/session");
 const { ApiError } = require("./utils/ApiError");
 const { error: errorResponse } = require("./utils/response");
 const { init: initDb, ping } = require("./providers/db");
@@ -19,12 +20,22 @@ const { init: initDb, ping } = require("./providers/db");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
+
+app.use(cors(corsOptions));
+
 app.use(express.json());
 app.use(logger);
-app.use(cors(corsOptions));
+
+app.use(sessionMiddleware);
 
 const authRouter = require("./routes/auth");
 app.use("/api/auth", authRouter);
+
+const authSessionRouter = require("./routes/authSession");
+app.use("/api/auth", authSessionRouter);
 
 const healthRouter = require("./routes/health");
 app.use("/api/health", healthRouter);
@@ -34,6 +45,11 @@ app.use("/api/version", versionRouter);
 
 const meRouter = require("./routes/me");
 app.use("/api/me", meRouter);
+
+const childrenRouter = require("./routes/children");
+const { requireAuth } = require("./middlewares/requireAuth");
+
+app.use("/api/children", requireAuth, childrenRouter);
 
 const swaggerUi = require("swagger-ui-express");
 const { getOpenApiDocument } = require("./docs/openapi");
@@ -80,10 +96,7 @@ app.use((err, req, res, next) => {
     try {
       await initDb();
       const pingResult = await ping();
-
-      if (!pingResult) {
-        throw new Error("Database ping failed");
-      }
+      if (!pingResult) throw new Error("Database ping failed");
 
       console.log("[DB] init & ping OK");
       break;
@@ -99,7 +112,6 @@ app.use((err, req, res, next) => {
         process.exit(1);
       }
 
-      // 5초 후 재시도
       console.log(`[DB] 5초 후 재시도합니다...`);
       await new Promise((resolve) => setTimeout(resolve, 5000));
     }

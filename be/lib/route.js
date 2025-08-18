@@ -1,19 +1,5 @@
 const { registry } = require("../docs/openapi");
 
-/**
- * defineRoute(router, {
- *   method: 'get'|'post'|'put'|'delete'|'patch',
- *   path: '/api/...',
- *   summary: '요약',
- *   request: { body?: zodSchema },   // (선택) 요청 바디 Zod 스키마
- *   responses: {                     // (선택) 응답 스키마들
- *     200: { description: '성공', body?: zodSchema },
- *     400: { description: '실패', body?: zodSchema },
- *   },
- *   handler: async ({ body }, req, res) => any
- * })
- */
-
 function defineRoute(
   router,
   {
@@ -62,6 +48,11 @@ function defineRoute(
     try {
       const parsed = {
         body: request.body ? request.body.parse(req.body) : undefined,
+        query: request.query
+          ? req.query
+            ? request.query.parse(req.query)
+            : {}
+          : req.query,
       };
       const out = await handler(parsed, req, res);
       if (out !== undefined && !res.headersSent) res.json(out);

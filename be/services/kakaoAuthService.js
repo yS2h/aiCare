@@ -7,81 +7,108 @@ if (typeof globalThis.fetch === "undefined") {
   fetch = globalThis.fetch;
 }
 
-async function getTokenInfo(accessToken) {
-  const res = await fetchWithTimeout(
-    "https://kapi.kakao.com/v1/user/access_token_info",
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    }
-  );
-  if (!res.ok) {
-    let body;
+async function fetchWithTimeout(url, options = {}) {
+  const { timeout = 10000, retries = 1, ...rest } = options;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+
     try {
-      body = await res.json();
-    } catch {
-      body = await res.text();
+      const res = await fetch(url, { ...rest, signal: controller.signal });
+      clearTimeout(timer);
+      if (res.status >= 500 && attempt < retries) continue;
+      return res;
+    } catch (e) {
+      clearTimeout(timer);
+      if (attempt < retries) continue;
+      throw e;
     }
-    throw new BadRequestError("카카오 토큰 검증 실패", {
-      status: res.status,
-      body,
-    });
   }
-  return res.json();
+}
+
+const KAKAO_CLIENT_ID = process.env.KAKAO_CLIENT_ID;
+const KAKAO_CLIENT_SECRET = process.env.KAKAO_CLIENT_SECRET || "";
+const KAKAO_REDIRECT_URI =
+  process.env.KAKAO_REDIRECT_URI ||
+  "http://localhost:5000/api/auth/kakao/callback";
+
+/**
+ * Kakao authorize URL 생성
+ * @param {string} state
+ */
+function getKakaoAuthUrl(state) {
+  if (!KAKAO_CLIENT_ID || !KAKAO_REDIRECT_URI) {
+    throw new Error("KAKAO_CLIENT_ID/KAKAO_REDIRECT_URI env 누락");
+  }
+  const params = new URLSearchParams({
+    client_id: KAKAO_CLIENT_ID,
+    redirect_uri: KAKAO_REDIRECT_URI,
+    response_type: "code",
+    scope: "profile_nickname profile_image",
+    state,
+  });
+  return `https://kauth.kakao.com/oauth/authorize?${params.toString()}`;
+}
+
+async function exchangeCodeForToken(code, redirectUri = KAKAO_REDIRECT_URI) {
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: KAKAO_CLIENT_ID,
+    code,
+    redirect_uri: redirectUri,
+  });
+  if (KAKAO_CLIENT_SECRET) body.append("client_secret", KAKAO_CLIENT_SECRET);
+
+  const res = await fetchWithTimeout("https://kauth.kakao.com/oauth/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+    },
+    body,
+  });
+
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    data = {};
+  }
+  if (!res.ok) {
+    throw new BadRequestError(
+      `Kakao token exchange failed: ${data.error_description || res.statusText}`
+    );
+  }
+  return data;
 }
 
 async function getUserMe(accessToken) {
   const res = await fetchWithTimeout("https://kapi.kakao.com/v2/user/me", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    let body;
-    try {
-      body = await res.json();
-    } catch {
-      body = await res.text();
-    }
-    throw new BadRequestError("카카오 사용자 정보 조회 실패", {
-      status: res.status,
-      body,
-    });
+    throw new BadRequestError(
+      `Kakao user info failed: ${data.error_description || res.statusText}`
+    );
   }
-  const data = await res.json();
 
-  const id = String(data.id);
-  const nickname =
-    data.kakao_account?.profile?.nickname ??
-    data.properties?.nickname ??
-    `카카오유저_${id.slice(-4)}`;
+  const account = data.kakao_account || {};
+  const profile = account.profile || {};
 
-  const profile_image_url =
-    data.kakao_account?.profile?.profile_image_url ??
-    data.properties?.profile_image ??
-    "";
-
-  return { id, nickname, profile_image_url };
+  return {
+    id: String(data.id),
+    nickname: profile.nickname || "",
+    profile_image_url:
+      profile.profile_image_url || profile.thumbnail_image_url || "",
+    email: account.has_email && account.email ? account.email : "",
+  };
 }
 
-async function fetchWithTimeout(
-  url,
-  options = {},
-  { timeoutMs = 8000, retries = 1 } = {}
-) {
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const res = await fetch(url, { ...options, signal: controller.signal });
-      clearTimeout(timer);
-      if (res.status >= 500 && attempt < retries) {
-        continue;
-      }
-      return res;
-    } catch (err) {
-      clearTimeout(timer);
-      if (attempt < retries) continue;
-      throw err;
-    }
-  }
-}
-
-module.exports = { getTokenInfo, getUserMe };
+module.exports = {
+  fetchWithTimeout,
+  getKakaoAuthUrl,
+  exchangeCodeForToken,
+  getUserMe,
+};
