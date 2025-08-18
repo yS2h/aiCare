@@ -48,7 +48,9 @@ const meRouter = require("./routes/me");
 app.use("/api/me", meRouter);
 
 const childrenRouter = require("./routes/children");
-app.use("/api/children", childrenRouter);
+const { requireAuth } = require("./middlewares/requireAuth");
+
+app.use("/api/children", requireAuth, childrenRouter);
 
 const swaggerUi = require("swagger-ui-express");
 const { getOpenApiDocument } = require("./docs/openapi");
