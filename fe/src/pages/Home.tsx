@@ -17,7 +17,7 @@ export default function Home() {
       <TopBar title="아이 맞춤 성장 로드맵" variant="light" />
       <button
         onClick={logout}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 text-sm text-grey1 hover:text-white underline"
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 text-xs text-grey1 hover:text-white underline"
         aria-label="로그아웃"
       >
         로그아웃

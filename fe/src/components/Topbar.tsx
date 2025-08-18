@@ -20,7 +20,7 @@ export default function TopBar({ title, variant = 'light' }: TopBarProps) {
 
   return (
     <header className="w-full">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between p-5">
         {/* 왼쪽 */}
         <div className="flex items-baseline gap-2">
           <span
