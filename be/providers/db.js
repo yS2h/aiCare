@@ -62,8 +62,10 @@ async function init() {
     name           text NOT NULL,
     gender         text NOT NULL CHECK (gender IN ('male','female')),
     birth_date     date NOT NULL,
-    father_height  double precision,
-    mother_height  double precision,
+    height double precision NOT NULL,
+    weight double precision NOT NULL,
+    father_height  double precision NOT NULL,
+    mother_height  double precision NOT NULL,
     created_at     timestamptz NOT NULL DEFAULT now()
   );
 
