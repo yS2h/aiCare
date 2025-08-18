@@ -4,14 +4,17 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
+import { AuthProvider } from '@/auth/AuthContext'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <div className="app-frame shadow-md">
-        <App />
-      </div>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <div className="app-frame shadow-md">
+          <App />
+        </div>
+      </BrowserRouter>
+    </AuthProvider>
   </React.StrictMode>
 )
 
