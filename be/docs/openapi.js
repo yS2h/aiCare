@@ -19,6 +19,7 @@ function getOpenApiDocument() {
       description: "aiCare 백엔드 API 문서",
       contact: { name: "aiCare", email: "support@aicare.local" },
     },
+
     servers: [{ url: "/" }],
     components: {
       securitySchemes: {
