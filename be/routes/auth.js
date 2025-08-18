@@ -5,16 +5,33 @@ const jwt = require("jsonwebtoken");
 
 const { defineRoute } = require("../lib/route");
 const { upsertSocialUser } = require("../services/socialAuthService");
-const { signJwt } = require("../middlewares/auth");
+// const { signJwt } = require("../middlewares/auth");
 const {
   getKakaoAuthUrl,
   exchangeCodeForToken,
   getUserMe,
 } = require("../services/kakaoAuthService");
 
+const { setLoginSession } = require("../utils/setSession");
+
 const router = Router();
 
-const OAUTH_SUCCESS_REDIRECT = process.env.OAUTH_SUCCESS_REDIRECT;
+const getSuccessRedirect = () => {
+  const base =
+    process.env.NODE_ENV === "production"
+      ? process.env.OAUTH_SUCCESS_REDIRECT_PROD ||
+        process.env.OAUTH_SUCCESS_REDIRECT
+      : process.env.OAUTH_SUCCESS_REDIRECT;
+
+  return base || "http://localhost:5173/";
+};
+
+const redirectToFrontend = (res, ok, extra = {}) => {
+  const u = new URL(getSuccessRedirect());
+  const sp = new URLSearchParams({ auth: ok ? "ok" : "fail", ...extra });
+  u.hash = sp.toString();
+  return res.redirect(u.toString());
+};
 
 defineRoute(router, {
   method: "get",
@@ -35,13 +52,12 @@ defineRoute(router, {
       { expiresIn: "10m" }
     );
 
-    let authUrl;
     try {
-      authUrl = getKakaoAuthUrl(state);
+      const authUrl = getKakaoAuthUrl(state);
+      return res.redirect(authUrl);
     } catch (e) {
       return res.status(500).json({ message: e.message || "설정 오류" });
     }
-    return res.redirect(authUrl);
   },
 });
 
@@ -56,90 +72,42 @@ defineRoute(router, {
   method: "get",
   path: "/kakao/callback",
   docPath: "/api/auth/kakao/callback",
-  summary: "카카오 OAuth 콜백 처리",
+  summary: "카카오 OAuth 콜백 처리 (세션 로그인)",
   tags: ["Auth"],
   responses: {
-    302: { description: "프론트로 리다이렉트(#token 또는 #error)" },
+    302: { description: "프론트로 리다이렉트(#auth=ok|fail)" },
   },
-  handler: async (ctx, req, res) => {
-    const query = req.query;
-
-    const redirectWithHash = (kv) => {
-      const u = new URL(OAUTH_SUCCESS_REDIRECT);
-      const sp = new URLSearchParams(kv);
-      u.hash = sp.toString(); // #k=v&k2=v2
-      return res.redirect(u.toString());
-    };
-
-    const redirectToFrontend = (success = true) => {
-      if (success) {
-        res.cookie("authToken", appJwt, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-        res.cookie("authProvider", "kakao", {
-          httpOnly: false,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-      }
-      return res.redirect(OAUTH_SUCCESS_REDIRECT || "http://localhost:5173/");
-    };
-
-    if (!query) {
-      console.log("query가 undefined입니다");
-      return redirectToFrontend(false);
+  handler: async (_ctx, req, res) => {
+    const parsed = KakaoCallbackReq.safeParse(req.query);
+    if (!parsed.success) {
+      return redirectToFrontend(res, false, { reason: "bad_query" });
     }
-
-    if (!query.code || !query.state) {
-      console.log("필수 파라미터 누락:", {
-        code: query.code,
-        state: query.state,
-      });
-      return redirectToFrontend(false);
-    }
-
-    console.log("파라미터 검증 성공:", {
-      code: query.code,
-      state: query.state,
-    });
-
-    if (query.error) {
-      return redirectToFrontend(false);
+    const { code, state, error } = parsed.data;
+    if (error) {
+      return redirectToFrontend(res, false, { reason: "kakao_error" });
     }
 
     try {
-      jwt.verify(query.state, process.env.JWT_SECRET);
-      console.log("state JWT 검증 성공");
+      jwt.verify(state, process.env.JWT_SECRET);
     } catch (e) {
-      console.log("state JWT 검증 실패:", e.message);
-      return redirectToFrontend(false);
+      return redirectToFrontend(res, false, { reason: "state" });
     }
 
-    let tokenRes;
+    let accessToken;
     try {
-      tokenRes = await exchangeCodeForToken(query.code);
-      console.log("카카오 액세스 토큰 교환 성공");
+      const tokenRes = await exchangeCodeForToken(code);
+      accessToken = tokenRes && tokenRes.access_token;
+      if (!accessToken) throw new Error("no_access_token");
     } catch (e) {
-      console.log("카카오 액세스 토큰 교환 실패:", e.message);
-      return redirectToFrontend(false);
-    }
-    const accessToken = tokenRes && tokenRes.access_token;
-    if (!accessToken) {
-      console.log("액세스 토큰이 없습니다");
-      return redirectToFrontend(false);
+      return redirectToFrontend(res, false, { reason: "token" });
     }
 
     let me;
     try {
       me = await getUserMe(accessToken);
-      console.log("카카오 사용자 정보 조회 성공:", me.id);
+      if (!me?.id) throw new Error("no_kakao_user");
     } catch (e) {
-      console.log("카카오 사용자 정보 조회 실패:", e.message);
-      return redirectToFrontend(false);
+      return redirectToFrontend(res, false, { reason: "me" });
     }
 
     let user;
@@ -150,22 +118,22 @@ defineRoute(router, {
         name: me.nickname,
         profile_image_url: me.profile_image_url ?? "",
       });
-      console.log("사용자 DB 저장 성공:", user.id);
+      if (!user?.id) throw new Error("no_local_user");
     } catch (e) {
-      console.log("사용자 DB 저장 실패:", e.message);
-      return redirectToFrontend(false);
-    }
-    let appJwt;
-    try {
-      appJwt = signJwt(user);
-      console.log("JWT 토큰 발급 성공");
-    } catch (e) {
-      console.log("JWT 토큰 발급 실패:", e.message);
-      return redirectToFrontend(false);
+      return redirectToFrontend(res, false, { reason: "db" });
     }
 
-    console.log("카카오 로그인 완료, 프론트로 리다이렉트");
-    return redirectToFrontend(true);
+    try {
+      await setLoginSession(req, {
+        id: user.id,
+        name: user.name ?? me.nickname,
+        avatarUrl: user.profile_image_url ?? me.profile_image_url ?? "",
+      });
+    } catch (e) {
+      return redirectToFrontend(res, false, { reason: "session" });
+    }
+
+    return redirectToFrontend(res, true);
   },
 });
 
