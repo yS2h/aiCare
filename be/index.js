@@ -25,10 +25,8 @@ if (process.env.NODE_ENV === "production") {
 }
 
 app.use(cors(corsOptions));
-
 app.use(express.json());
 app.use(logger);
-
 app.use(sessionMiddleware);
 
 const authRouter = require("./routes/auth");
@@ -46,16 +44,13 @@ app.use("/api/version", versionRouter);
 const meRouter = require("./routes/me");
 app.use("/api/me", meRouter);
 
-const childrenRouter = require("./routes/children");
 const { requireAuth } = require("./middlewares/requireAuth");
-
+const childrenRouter = require("./routes/children");
 app.use("/api/children", requireAuth, childrenRouter);
 
 const swaggerUi = require("swagger-ui-express");
 const { getOpenApiDocument } = require("./docs/openapi");
-
 app.get("/openapi.json", (_, res) => res.json(getOpenApiDocument()));
-
 app.use(
   "/docs",
   swaggerUi.serve,
@@ -87,7 +82,6 @@ app.use((err, req, res, next) => {
     : err.message || "Internal Server Error";
   res.status(500).json(errorResponse(message, 500));
 });
-
 (async () => {
   const maxRetries = 3;
   let retryCount = 0;
@@ -106,12 +100,10 @@ app.use((err, req, res, next) => {
         `[DB] 초기화 실패 (시도 ${retryCount}/${maxRetries}):`,
         e.message
       );
-
       if (retryCount >= maxRetries) {
         console.error("[DB] 최대 재시도 횟수 초과. 서버를 종료합니다.");
         process.exit(1);
       }
-
       console.log(`[DB] 5초 후 재시도합니다...`);
       await new Promise((resolve) => setTimeout(resolve, 5000));
     }
