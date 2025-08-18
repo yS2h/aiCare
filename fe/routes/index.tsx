@@ -30,7 +30,7 @@ export default function AppRoutes() {
         <Route path="/consulting" element={<Consulting />} />
       </Route>
 
-      {/* 알 수 없는 경로는 홈으로 */}
+      {/* 알 수 없는 경로 */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

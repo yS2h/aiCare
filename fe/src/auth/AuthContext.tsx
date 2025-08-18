@@ -24,14 +24,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch(`${API_BASE}/api/auth/me`, {
-        credentials: 'include' // 세션 쿠키 포함
-      })
-      if (!res.ok) {
-        setUser(null)
-      } else {
+      const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
+
+      if (res.status === 200) {
         const data = (await res.json()) as User
         setUser(data ?? null)
+      } else if (res.status === 401 || res.status === 204) {
+        // 인증 x → 비로그인 상태
+        setUser(null)
+      } else {
+        setUser(null)
       }
     } catch {
       setUser(null)
@@ -48,8 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
     } finally {
       setUser(null)
-      window.location.replace('/login')
-      console.log('refresh')
     }
   }, [])
 
