@@ -9,7 +9,7 @@ interface ButtonProps {
 const Button: React.FC<ButtonProps> = ({ label, withBottomNav = true }) => {
   return (
     <div
-      className="fixed left-1/2 -translate-x-1/2 w-full max-w-[600px] px-4"
+      className="fixed left-1/2 -translate-x-1/2 w-full max-w-[600px] px-6"
       style={{
         bottom: withBottomNav
           ? 'calc(var(--bottom-nav-h, 72px) + var(--button-gap, 24px) + env(safe-area-inset-bottom))'

@@ -17,10 +17,10 @@
 
 @theme {
   --color-main: #202632;
-  --color-grey1: #3a3a3a;
-  --color-grey2: #6b6b6b;
-  --color-grey3: #cdcdcd;
-  --color-grey4: #f3f3f3;
+  --color-gray1: #3a3a3a;
+  --color-gray2: #6b6b6b;
+  --color-gray3: #cdcdcd;
+  --color-gray4: #f3f3f3;
 }
 
 @layer base {
