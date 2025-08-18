@@ -1,26 +1,24 @@
-import React from 'react'
-import BottomNav from '../components/BottomNav'
+export default function Login() {
+  const kakaoLoginUrl = import.meta.env.VITE_KAKAO_LOGIN_URL as string
 
-const Login: React.FC = () => {
+  const onKakaoClick = () => {
+    window.location.href = kakaoLoginUrl
+  }
+
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden text-white">
-      <div className="absolute inset-0 bg-main" />
-      <div className="absolute inset-0 bg-gradient-to-b from-gray1 via-main to-gray1 opacity-95" />
-
-      <div className="relative z-10 text-center w-full max-w-md px-6 mt-60">
-        <h1 className="text-3xl font-bold tracking-wide">aiCare</h1>
-        <p className="mt-2 text-sm text-white/80 font-medium tracking-wide">
-          아이 맞춤 성장 로드맵
-        </p>
-
-        <div className="mt-70">
-          <img src="/kakao.png" alt="카카오톡 로고" className="w-10 h-10 mx-auto" />
-        </div>
+    <div className="min-h-screen w-full grid grid-rows-[2fr_1fr] bg-main text-white">
+      {/* 타이틀 */}
+      <div className="flex flex-col justify-center items-center">
+        <h1 className="text-3xl font-bold">aiCare</h1>
+        <p className="mt-2 text-sm text-white/80">아이 맞춤 성장 로드맵</p>
       </div>
 
-      <BottomNav showBottomNav={false} />
+      {/* 로그인 버튼 */}
+      <div className="flex items-start justify-center">
+        <button onClick={onKakaoClick}>
+          <img src="/kakao.png" alt="카카오톡 로고" className="w-10 h-10" />
+        </button>
+      </div>
     </div>
   )
 }
-
-export default Login

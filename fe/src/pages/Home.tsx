@@ -1,11 +1,27 @@
-import TopBar from '../components/Topbar'
-import BottomNav from '../components/BottomNav'
+import TopBar from '@/components/Topbar'
+import { useAuth } from '@/auth/AuthContext'
 
 export default function Home() {
+  const { loading, logout } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-main text-white flex items-center justify-center">
+        <span className="text-sm text-white/70">로딩 중…</span>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-white flex flex-col relative">
+    <div className="min-h-screen">
       <TopBar title="아이 맞춤 성장 로드맵" variant="light" />
-      <BottomNav activePage="/" />
+      <button
+        onClick={logout}
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 text-xs text-grey1 hover:text-white underline"
+        aria-label="로그아웃"
+      >
+        로그아웃
+      </button>
     </div>
   )
 }
