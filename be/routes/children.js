@@ -1,75 +1,96 @@
 const { Router } = require("express");
 const { z } = require("zod");
-const { extendZodWithOpenApi } = require("@asteasolutions/zod-to-openapi");
-extendZodWithOpenApi(z);
-
+const { defineRoute } = require("../lib/route");
 const { ApiError } = require("../utils/ApiError");
 const { success } = require("../utils/response");
 const { upsertChild } = require("../services/childrenService");
-const { defineRoute } = require("../lib/route");
 
 const router = Router();
 
-const bodySchema = z
-  .object({
-    name: z.string().min(1).openapi({ example: "김신라" }),
-    gender: z.enum(["male", "female"]).openapi({ example: "female" }),
-    birth_date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD")
-      .openapi({ format: "date", example: "2018-06-01" }),
-    height: z.coerce.number().positive().openapi({ example: 122.4 }),
-    weight: z.coerce.number().positive().openapi({ example: 24.7 }),
-    father_height: z.coerce.number().positive().openapi({ example: 176.2 }),
-    mother_height: z.coerce.number().positive().openapi({ example: 162.3 }),
-  })
-  .openapi("ChildUpsertRequest");
+const bodySchema = z.object({
+  name: z.string().min(1),
+  gender: z.enum(["male", "female"]),
+  birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD"),
+  height: z.coerce.number().positive(),
+  weight: z.coerce.number().positive(),
+  father_height: z.coerce.number().positive(),
+  mother_height: z.coerce.number().positive(),
+});
 
-const childSchema = z
-  .object({
-    id: z
-      .string()
-      .uuid()
-      .openapi({ example: "2b4b7b2e-6d67-4c1a-9b0c-7b2c7b3f5d8e" }),
-    user_id: z
-      .string()
-      .uuid()
-      .openapi({ example: "41cfb563-f5c9-4d4e-a57a-b421b4564f86" }),
-    name: z.string().openapi({ example: "김신라" }),
-    gender: z.enum(["male", "female"]).openapi({ example: "female" }),
-    birth_date: z.string().openapi({ format: "date", example: "2018-06-01" }),
-    height: z.number().openapi({ example: 124.0 }),
-    weight: z.number().openapi({ example: 25.1 }),
-    father_height: z.number().openapi({ example: 176.2 }),
-    mother_height: z.number().openapi({ example: 162.3 }),
-    created_at: z
-      .string()
-      .openapi({ format: "date-time", example: "2025-08-18T00:10:11.123Z" }),
-  })
-  .openapi("Child");
+const ChildUpsertRequestSchema = {
+  type: "object",
+  required: [
+    "name",
+    "gender",
+    "birth_date",
+    "height",
+    "weight",
+    "father_height",
+    "mother_height",
+  ],
+  properties: {
+    name: { type: "string", example: "김또이" },
+    gender: { type: "string", enum: ["male", "female"], example: "female" },
+    birth_date: { type: "string", format: "date", example: "2018-06-01" },
+    height: { type: "number", example: 122.4 },
+    weight: { type: "number", example: 24.7 },
+    father_height: { type: "number", example: 176.2 },
+    mother_height: { type: "number", example: 162.3 },
+  },
+};
 
-const apiSuccessChildSchema = z
-  .object({
-    ok: z.boolean().openapi({ example: true }),
-    message: z.string().openapi({ example: "saved" }),
-    data: childSchema,
-  })
-  .openapi("ApiSuccessChild");
+const ChildSchema = {
+  type: "object",
+  properties: {
+    id: {
+      type: "string",
+      format: "uuid",
+      example: "2b4b7b2e-6d67-4c1a-9b0c-7b2c7b3f5d8e",
+    },
+    user_id: {
+      type: "string",
+      format: "uuid",
+      example: "41cfb563-f5c9-4d4e-a57a-b421b4564f86",
+    },
+    name: { type: "string", example: "김또이" },
+    gender: { type: "string", enum: ["male", "female"], example: "female" },
+    birth_date: { type: "string", format: "date", example: "2018-06-01" },
+    height: { type: "number", example: 124.0 },
+    weight: { type: "number", example: 25.1 },
+    father_height: { type: "number", example: 176.2 },
+    mother_height: { type: "number", example: 162.3 },
+    created_at: {
+      type: "string",
+      format: "date-time",
+      example: "2025-08-18T00:10:11.123Z",
+    },
+  },
+};
+
+const ApiSuccessChildSchema = {
+  type: "object",
+  properties: {
+    ok: { type: "boolean", example: true },
+    message: { type: "string", example: "saved" },
+    data: ChildSchema,
+  },
+};
 
 defineRoute(router, {
   method: "post",
   path: "/",
-  docPath: "/children",
+  docPath: "/api/children",
   summary: "아이 정보 등록/수정 (UPSERT by user_id)",
   tags: ["Children"],
   security: [{ bearerAuth: [] }],
   request: {
     body: {
+      required: true,
       content: {
         "application/json": {
-          schema: bodySchema,
+          schema: ChildUpsertRequestSchema,
           example: {
-            name: "김신라",
+            name: "김또이",
             gender: "female",
             birth_date: "2018-06-01",
             height: 122.4,
@@ -86,7 +107,7 @@ defineRoute(router, {
       description: "저장 성공",
       content: {
         "application/json": {
-          schema: apiSuccessChildSchema,
+          schema: ApiSuccessChildSchema,
         },
       },
     },
@@ -95,14 +116,8 @@ defineRoute(router, {
     404: { description: "사용자 없음(FK)" },
   },
 
-  handler: async (ctxOrReq, maybeReq, maybeRes, maybeNext) => {
-    const hasCtx = !!maybeReq;
-    const req = hasCtx ? maybeReq : ctxOrReq;
-    const res = hasCtx ? maybeRes : maybeReq;
-    const next = hasCtx ? maybeNext : maybeRes;
-    const rawBody = hasCtx ? (ctxOrReq?.body ?? req.body) : req.body;
-
-    const parsed = bodySchema.safeParse(rawBody);
+  handler: async (_ctx, req, res, next) => {
+    const parsed = bodySchema.safeParse(req.body);
     if (!parsed.success) {
       return next(
         new ApiError(400, "Validation failed", parsed.error.flatten())
