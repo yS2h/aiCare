@@ -1,6 +1,5 @@
 const { Router } = require("express");
 const { z } = require("zod");
-const { defineRoute } = require("../lib/route");
 const { ApiError } = require("../utils/ApiError");
 const { success } = require("../utils/response");
 const { upsertChild } = require("../services/childrenService");
@@ -89,9 +88,7 @@ registry.registerPath({
   responses: {
     200: {
       description: "저장 성공",
-      content: {
-        "application/json": { schema: ApiSuccessChildZ },
-      },
+      content: { "application/json": { schema: ApiSuccessChildZ } },
     },
     400: { description: "검증 실패 / UUID 오류 / CHECK 제약 위반" },
     401: { description: "인증 실패" },
@@ -99,51 +96,30 @@ registry.registerPath({
   },
 });
 
-defineRoute(router, {
-  method: "post",
-  path: "/",
-  docPath: "/api/children",
-  summary: "아이 정보 등록/수정 (UPSERT by user_id)",
-  tags: ["Children"],
-  security: [{ bearerAuth: [] }],
-  request: {
-    body: {
-      required: true,
-      content: {
-        "application/json": {
-          schema: ChildUpsertRequestZ,
-        },
-      },
-    },
-  },
-  responses: { 200: { description: "ok" } },
+router.post("/", async (req, res, next) => {
+  const parsed = bodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    return next(new ApiError(400, "Validation failed", parsed.error.flatten()));
+  }
 
-  handler: async (_ctx, req, res, next) => {
-    const parsed = bodySchema.safeParse(req.body);
-    if (!parsed.success) {
-      return next(
-        new ApiError(400, "Validation failed", parsed.error.flatten())
-      );
-    }
-    try {
-      const saved = await upsertChild(req.user.id, parsed.data);
-      return res.json(success(saved, "saved"));
-    } catch (err) {
-      if (err?.code === "22P02")
-        return next(new ApiError(400, "Invalid UUID for user_id"));
-      if (err?.code === "23503")
-        return next(new ApiError(404, "User not found (FK)"));
-      if (err?.code === "23514")
-        return next(new ApiError(400, "Check constraint failed"));
-      if (err?.code === "23502")
-        return next(new ApiError(400, "Required column is NULL"));
-      if (err?.code === "42501")
-        return next(new ApiError(500, "DB permission denied"));
-      if (err?.code === "42P01")
-        return next(new ApiError(500, "Table 'children' not found"));
-      return next(err);
-    }
-  },
+  try {
+    const saved = await upsertChild(req.user.id, parsed.data);
+    return res.json(success(saved, "saved"));
+  } catch (err) {
+    if (err?.code === "22P02")
+      return next(new ApiError(400, "Invalid UUID for user_id"));
+    if (err?.code === "23503")
+      return next(new ApiError(404, "User not found (FK)"));
+    if (err?.code === "23514")
+      return next(new ApiError(400, "Check constraint failed"));
+    if (err?.code === "23502")
+      return next(new ApiError(400, "Required column is NULL"));
+    if (err?.code === "42501")
+      return next(new ApiError(500, "DB permission denied"));
+    if (err?.code === "42P01")
+      return next(new ApiError(500, "Table 'children' not found"));
+    return next(err);
+  }
 });
 
 module.exports = router;

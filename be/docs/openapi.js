@@ -23,11 +23,7 @@ function getOpenApiDocument() {
     servers: [{ url: "/" }],
     components: {
       securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
-        },
+        bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" },
       },
     },
   });
