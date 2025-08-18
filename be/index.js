@@ -35,6 +35,9 @@ app.use("/api/version", versionRouter);
 const meRouter = require("./routes/me");
 app.use("/api/me", meRouter);
 
+const childrenRouter = require("./routes/children");
+app.use("/api/children", childrenRouter);
+
 const swaggerUi = require("swagger-ui-express");
 const { getOpenApiDocument } = require("./docs/openapi");
 
