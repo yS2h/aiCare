@@ -24,10 +24,10 @@ export default function BottomNav({ activePage, showBottomNav = true }: BottomNa
 
   return (
     <nav
-      className="fixed left-1/2 -translate-x-1/2 bottom-0 z-50 w-full max-w-[600px] px-4"
+      className="fixed left-1/2 -translate-x-1/2 bottom-0 z-50 w-full max-w-[600px]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="bg-white border-t " style={{ borderColor: 'var(--color-grey3)' }}>
+      <div className="bg-white border-t " style={{ borderColor: 'var(--color-gray3)' }}>
         <div
           className="flex items-center justify-around py-3 px-2"
           style={{ borderColor: '#cdcdcd' }}
@@ -41,12 +41,12 @@ export default function BottomNav({ activePage, showBottomNav = true }: BottomNa
                 onClick={() => navigate(item.path)}
                 className={clsx(
                   'flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all duration-200',
-                  'hover:bg-grey4',
-                  active ? 'text-main' : 'text-grey1'
+                  'hover:bg-gray4',
+                  active ? 'text-main' : 'text-gray1'
                 )}
               >
-                <Icon size={24} className={clsx('mb-1', active ? 'text-main' : 'text-grey1')} />
-                <span className={clsx('text-xs font-medium', active ? 'text-main' : 'text-grey1')}>
+                <Icon size={24} className={clsx('mb-1', active ? 'text-main' : 'text-gray1')} />
+                <span className={clsx('text-xs font-medium', active ? 'text-main' : 'text-gray1')}>
                   {item.label}
                 </span>
               </button>
