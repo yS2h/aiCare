@@ -35,6 +35,9 @@ app.use(sessionMiddleware);
 const authRouter = require("./routes/auth");
 app.use("/api/auth", authRouter);
 
+const authSessionRouter = require("./routes/authSession");
+app.use("/api/auth", authSessionRouter);
+
 const healthRouter = require("./routes/health");
 app.use("/api/health", healthRouter);
 
