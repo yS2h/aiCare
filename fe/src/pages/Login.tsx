@@ -1,4 +1,5 @@
 import React from 'react'
+import BottomNav from '../components/BottomNav'
 
 const Login: React.FC = () => {
   return (
@@ -16,6 +17,8 @@ const Login: React.FC = () => {
           <img src="/kakao.png" alt="카카오톡 로고" className="w-10 h-10 mx-auto" />
         </div>
       </div>
+
+      <BottomNav showBottomNav={false} />
     </div>
   )
 }
