@@ -65,7 +65,6 @@ registry.registerPath({
   path: "/api/children",
   summary: "아이 정보 등록/수정 (UPSERT by user_id)",
   tags: ["Children"],
-  security: [{ bearerAuth: [] }],
   request: {
     body: {
       required: true,
