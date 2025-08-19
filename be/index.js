@@ -25,7 +25,7 @@ if (process.env.NODE_ENV === "production") {
 }
 
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions)); // Express5: '*' 대신 정규식
+app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 app.use(logger);
@@ -43,7 +43,6 @@ app.use("/api/health", healthRouter);
 const versionRouter = require("./routes/version");
 app.use("/api/version", versionRouter);
 
-// 세션/토큰 하이브리드 미들웨어
 const { requireAuth } = require("./middlewares/requireAuth");
 
 const meRouter = require("./routes/me");
@@ -53,8 +52,7 @@ const childrenRouter = require("./routes/children");
 app.use("/api/children", requireAuth, childrenRouter);
 
 const growthRouter = require("./routes/growth");
-
-app.use("/api", growthRouter);
+app.use("/api", requireAuth, growthRouter);
 
 const swaggerUi = require("swagger-ui-express");
 const { getOpenApiDocument } = require("./docs/openapi");
@@ -122,3 +120,4 @@ app.use((err, req, res, next) => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 })();
+module.exports = app;
