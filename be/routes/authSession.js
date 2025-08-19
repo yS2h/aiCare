@@ -15,18 +15,11 @@ defineRoute(router, {
     401: { description: "미인증" },
   },
   handler: async (_ctx, req, res) => {
-    if (!req.session || !req.session.userId) {
+    const sessionUserId = req.session?.user?.id || req.session?.userId;
+    if (!sessionUserId) {
       return res.status(401).json({ authenticated: false });
     }
-    const user = req.session.user
-      ? {
-          id: req.session.user.id,
-          name: req.session.user.name,
-          avatarUrl: req.session.user.avatarUrl,
-          email: req.session.user.email,
-        }
-      : { id: req.session.userId };
-
+    const user = req.session.user || { id: sessionUserId };
     return res.json({ authenticated: true, user });
   },
 });
@@ -38,7 +31,7 @@ defineRoute(router, {
   summary: "로그아웃 (세션 파기)",
   tags: ["Auth"],
   responses: {
-    204: { description: "성공(콘텐츠 없음)" },
+    204: { description: "성공" },
     500: { description: "스토어 에러" },
   },
   handler: async (_ctx, req, res) => {
@@ -46,7 +39,6 @@ defineRoute(router, {
       res.clearCookie(cookieName, cookieOptions);
       return res.status(204).end();
     };
-
     if (!req.session) return done();
 
     req.session.destroy((err) => {
