@@ -194,7 +194,7 @@ export default function Information() {
       </div>
 
       {/* ✅ 하단 고정 버튼 */}
-      <Button label="aiCare 시작하기" withBottomNav={false} />
+      <Button label="aiCare 시작하기" />
       <BottomNav showBottomNav={false} />
     </div>
   )
