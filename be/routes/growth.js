@@ -1,7 +1,7 @@
 const { Router } = require("express");
 const { z } = require("zod");
 const { defineRoute } = require("../lib/route");
-const { success } = require("../utils/responses");
+const { success } = require("../utils/response");
 const { upsertGrowthRecord } = require("../services/growthRecordService");
 const { UnauthorizedError } = require("../utils/ApiError");
 const {
