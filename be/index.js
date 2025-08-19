@@ -25,7 +25,8 @@ if (process.env.NODE_ENV === "production") {
 }
 
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
+app.options(/.*/, cors(corsOptions)); // Express5: '*' 대신 정규식
+
 app.use(express.json());
 app.use(logger);
 app.use(sessionMiddleware);
@@ -42,14 +43,17 @@ app.use("/api/health", healthRouter);
 const versionRouter = require("./routes/version");
 app.use("/api/version", versionRouter);
 
+// 세션/토큰 하이브리드 미들웨어
+const { requireAuth } = require("./middlewares/requireAuth");
+
 const meRouter = require("./routes/me");
 app.use("/api/me", meRouter);
 
-const { requireAuth } = require("./middlewares/requireAuth");
 const childrenRouter = require("./routes/children");
 app.use("/api/children", requireAuth, childrenRouter);
 
 const growthRouter = require("./routes/growth");
+
 app.use("/api", growthRouter);
 
 const swaggerUi = require("swagger-ui-express");
@@ -86,6 +90,7 @@ app.use((err, req, res, next) => {
     : err.message || "Internal Server Error";
   res.status(500).json(errorResponse(message, 500));
 });
+
 (async () => {
   const maxRetries = 3;
   let retryCount = 0;

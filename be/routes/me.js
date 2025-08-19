@@ -1,9 +1,11 @@
 const { Router } = require("express");
-const { requireAuth } = require("../middlewares/auth");
+const { requireAuth } = require("../middlewares/requireAuth");
 const { success } = require("../utils/response");
 
 const router = Router();
+
 router.get("/", requireAuth, (req, res) => {
   res.json(success({ me: req.user }));
 });
+
 module.exports = router;

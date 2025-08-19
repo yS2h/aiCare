@@ -58,15 +58,4 @@ async function getChildIdOrThrow(userId) {
   return rows[0].id;
 }
 
-async function getChildIdOrThrow(userId) {
-  const { rows } = await query(
-    `SELECT id FROM children WHERE user_id = $1 LIMIT 1`,
-    [userId]
-  );
-  if (rows.length === 0) {
-    throw new ApiError(404, "등록된 아이 정보가 없습니다.");
-  }
-  return rows[0].id;
-}
-
 module.exports = { upsertChild, getChildByUserId, getChildIdOrThrow };

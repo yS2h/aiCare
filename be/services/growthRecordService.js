@@ -21,16 +21,6 @@ async function assertChildOwnedByUser(childId, userId) {
   }
 }
 
-/**
- * 성장 이력 UPSERT
- * @param {Object} args
- * @param {string} args.userId
- * @param {string=} args.childId
- * @param {string} args.recordedAt
- * @param {number} args.heightCm
- * @param {number} args.weightKg
- * @param {string=} args.notes
- */
 async function upsertGrowthRecord({
   userId,
   childId,
@@ -81,13 +71,6 @@ async function upsertGrowthRecord({
   return rows[0];
 }
 
-/**
- * 성장 이력 목록 조회 (최신순, 전체)
- * @param {Object} args
- * @param {string} args.userId
- * @param {string=} args.childId
- * @returns {Promise<Array>}
- */
 async function listGrowthRecords({ userId, childId }) {
   if (!userId) throw new BadRequestError("로그인이 필요합니다.");
 

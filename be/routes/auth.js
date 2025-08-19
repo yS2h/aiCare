@@ -20,9 +20,7 @@ function setLoginSession(req, user) {
     email: user.email || null,
     avatarUrl: user.avatarUrl || null,
   };
-
   req.session.userId = user.id;
-
   return new Promise((resolve, reject) => {
     req.session.save((err) => (err ? reject(err) : resolve()));
   });
@@ -51,9 +49,7 @@ defineRoute(router, {
   docPath: "/api/auth/kakao",
   summary: "카카오 로그인 시작",
   tags: ["Auth"],
-  responses: {
-    302: { description: "카카오 OAuth 페이지로 리다이렉트" },
-  },
+  responses: { 302: { description: "카카오 OAuth 페이지로 리다이렉트" } },
   handler: async (_ctx, req, res) => {
     if (!process.env.JWT_SECRET) {
       return res.status(500).json({ message: "JWT_SECRET env 누락" });
@@ -84,11 +80,9 @@ defineRoute(router, {
   method: "get",
   path: "/kakao/callback",
   docPath: "/api/auth/kakao/callback",
-  summary: "카카오 OAuth 콜백 처리 (세션 로그인)",
+  summary: "카카오 OAuth 콜백 처리",
   tags: ["Auth"],
-  responses: {
-    302: { description: "프론트로 리다이렉트(#auth=ok|fail)" },
-  },
+  responses: { 302: { description: "프론트로 리다이렉트(#auth=ok|fail)" } },
   handler: async (_ctx, req, res) => {
     const parsed = KakaoCallbackReq.safeParse(req.query);
     if (!parsed.success) {

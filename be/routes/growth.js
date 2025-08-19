@@ -133,9 +133,7 @@ defineRoute(router, {
   docPath: "/api/children/{childId}/growth",
   summary: "성장 이력 목록",
   tags: ["Growth"],
-  request: {
-    params: ParamsSchema,
-  },
+  request: { params: ParamsSchema },
   responses: {
     200: {
       description: "ok",
