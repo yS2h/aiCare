@@ -1,3 +1,4 @@
+// src/pages/Information.tsx
 import React, { useState } from 'react'
 import BottomNav from '../components/BottomNav'
 import Button from '../components/Button'
@@ -6,8 +7,8 @@ import api from '@/api/instance'
 export default function Information() {
   const [formData, setFormData] = useState({
     childName: '',
-    gender: '', 
-    childBirth: '', 
+    gender: '', // '남' | '여'
+    childBirth: '', // 'YYYY-MM-DD'
     childHeight: '',
     childWeight: '',
     fatherHeight: '',
@@ -29,50 +30,50 @@ export default function Information() {
   const toNum = (v: string) => (v.trim() === '' ? null : Number(v))
 
   const handleSubmit = async (e?: React.FormEvent) => {
-  e?.preventDefault?.()
-  setError(null)
-  setSuccess(null)
-
-  if (!formData.childName || !formData.gender || !formData.childBirth) {
-    setError('아이 이름 / 성별 / 생년월일은 필수입니다.')
-    return
-  }
-
-  const payload = {
-    name: formData.childName,
-    gender: formData.gender === '남' ? 'male' : 'female',
-    birth_date: formData.childBirth,
-    height: toNum(formData.childHeight),
-    weight: toNum(formData.childWeight),
-    father_height: toNum(formData.fatherHeight),
-    mother_height: toNum(formData.motherHeight)
-  }
-
-  try {
-    setLoading(true)
-    console.log('CALL baseURL =', api.defaults.baseURL)
-
-    const res = await api.post('/api/children', payload)
-
-    setSuccess(res?.data?.message || '저장되었습니다.')
+    e?.preventDefault?.()
     setError(null)
-
-  } catch (err: any) {
     setSuccess(null)
-    setError(err?.response?.data?.message ?? err?.message ?? '요청 중 오류가 발생했습니다.')
-  } finally {
-    setLoading(false)
-  }
-}
 
+    // 필수값 검증
+    if (!formData.childName || !formData.gender || !formData.childBirth) {
+      setError('아이 이름 / 성별 / 생년월일은 필수입니다.')
+      return
+    }
 
-  const inputStyle = {
-    borderColor: '#cdcdcd'
+    // 서버 페이로드
+    const payload = {
+      name: formData.childName,
+      gender: formData.gender === '남' ? 'male' : 'female',
+      birth_date: formData.childBirth,
+      height: toNum(formData.childHeight),
+      weight: toNum(formData.childWeight),
+      father_height: toNum(formData.fatherHeight),
+      mother_height: toNum(formData.motherHeight)
+    }
+
+    try {
+      setLoading(true)
+      console.log('CALL baseURL =', api.defaults.baseURL)
+
+      const res = await api.post('/api/children', payload)
+
+      // 2xx면 성공 처리
+      setSuccess(res?.data?.message || '저장되었습니다.')
+      setError(null)
+    } catch (err: any) {
+      setSuccess(null)
+      setError(err?.response?.data?.message ?? err?.message ?? '요청 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const inputStyle = { borderColor: '#cdcdcd' as const }
 
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
       <div className="flex-1 max-w-md mx-auto w-full px-4 pt-8">
+        {/* 헤더 */}
         <div className="mb-8">
           <h1
             style={{ fontSize: '27px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}
@@ -82,6 +83,7 @@ export default function Information() {
           <p className="text-xs text-gray-800">서비스 이용을 위한 필수 정보를 입력해 주세요.</p>
         </div>
 
+        {/* form */}
         <form id="infoForm" onSubmit={handleSubmit} className="space-y-6">
           {/* 아이 이름 + 성별 */}
           <div className="grid grid-cols-2 gap-3">
@@ -94,7 +96,6 @@ export default function Information() {
                 onChange={handleInputChange}
                 className="w-full px-3 py-2.5 border text-sm rounded-md focus:outline-none focus:ring-1"
                 style={inputStyle}
-                placeholder="아이 이름을 입력하세요"
               />
             </div>
 
@@ -165,21 +166,21 @@ export default function Information() {
               className="w-full px-3 py-2.5 pt-3 border text-sm rounded-md focus:outline-none focus:ring-1 text-gray-400"
               style={inputStyle}
               onFocus={e => {
-                e.target.style.borderColor = '#cdcdcd'
-                e.target.style.setProperty('--tw-ring-color', '#cdcdcd')
-                e.target.classList.remove('text-gray-400')
-                e.target.classList.add('text-gray-900')
+                e.currentTarget.style.borderColor = '#cdcdcd'
+                e.currentTarget.style.setProperty('--tw-ring-color', '#cdcdcd')
+                e.currentTarget.classList.remove('text-gray-400')
+                e.currentTarget.classList.add('text-gray-900')
               }}
               onBlur={e => {
-                if (!e.target.value) {
-                  e.target.classList.remove('text-gray-900')
-                  e.target.classList.add('text-gray-400')
+                if (!e.currentTarget.value) {
+                  e.currentTarget.classList.remove('text-gray-900')
+                  e.currentTarget.classList.add('text-gray-400')
                 }
               }}
             />
           </div>
 
-          {/* 아이 키 / 몸무게 */}
+          {/* ✅ 아이 키 / 몸무게 (다른 필드와 동일 스타일로 통일) */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">아이 키</label>
@@ -191,6 +192,9 @@ export default function Information() {
                 className="w-full px-3 py-2.5 border text-sm rounded-md focus:outline-none focus:ring-1"
                 style={inputStyle}
                 placeholder="cm"
+                step="0.1"
+                min="0"
+                inputMode="decimal"
               />
             </div>
             <div className="space-y-2">
@@ -200,9 +204,12 @@ export default function Information() {
                 name="childWeight"
                 value={formData.childWeight}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border text-sm rounded-md focus:ring-1 focus:outline-none"
+                className="w-full px-3 py-2.5 border text-sm rounded-md focus:outline-none focus:ring-1"
                 style={inputStyle}
                 placeholder="kg"
+                step="0.1"
+                min="0"
+                inputMode="decimal"
               />
             </div>
           </div>
@@ -219,6 +226,8 @@ export default function Information() {
                 className="w-full px-3 py-2.5 border text-sm rounded-md focus:outline-none focus:ring-1"
                 style={inputStyle}
                 placeholder="cm"
+                step="0.1"
+                min="0"
               />
             </div>
             <div className="space-y-2">
@@ -231,17 +240,22 @@ export default function Information() {
                 className="w-full px-3 py-2.5 border text-sm rounded-md focus:outline-none focus:ring-1"
                 style={inputStyle}
                 placeholder="cm"
+                step="0.1"
+                min="0"
               />
             </div>
           </div>
 
+          {/* 메시지 */}
           {error && <p className="text-sm text-red-500">{error}</p>}
           {success && <p className="text-sm text-green-600">{success}</p>}
 
+          {/* 숨은 submit 버튼 (엔터 제출용) */}
           <button type="submit" className="hidden" />
         </form>
       </div>
 
+      {/* 하단 고정 버튼: form.submit 트리거 */}
       <div
         onClick={() => {
           const formEl = document.getElementById('infoForm') as HTMLFormElement | null
