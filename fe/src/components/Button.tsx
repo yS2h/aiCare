@@ -1,13 +1,22 @@
 import React from 'react'
 
-interface ButtonProps {
+export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   label: string
 }
 
-const Button: React.FC<ButtonProps> = ({ label }) => {
+export default function Button({
+  label,
+  disabled,
+  className,
+  style,
+  type = 'button',
+  ...rest
+}: ButtonProps) {
   return (
-    <div className="w-full flex justify-center ">
+    <div className="w-full flex justify-center">
       <button
+        type={type}
+        disabled={disabled}
         style={{
           backgroundColor: 'var(--color-main)',
           color: 'white',
@@ -17,13 +26,16 @@ const Button: React.FC<ButtonProps> = ({ label }) => {
           border: 'none',
           borderRadius: '10px',
           width: '100%',
-          maxWidth: '600px'
+          maxWidth: '600px',
+          opacity: disabled ? 0.6 : 1,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          ...style
         }}
+        className={className}
+        {...rest}
       >
         {label}
       </button>
     </div>
   )
 }
-
-export default Button
