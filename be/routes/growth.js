@@ -1,7 +1,7 @@
 const { Router } = require("express");
 const { z } = require("zod");
 const { defineRoute } = require("../lib/route");
-const { success } = require("../utils/response");
+const { success } = require("../utils/responses");
 const { upsertGrowthRecord } = require("../services/growthRecordService");
 const { UnauthorizedError } = require("../utils/ApiError");
 const {
@@ -28,13 +28,7 @@ const GrowthRecordSchema = z
   })
   .openapi("GrowthRecord");
 
-const ParamsSchema = z
-  .object({
-    childId: z.string().uuid(),
-  })
-  .openapi("GrowthRecordParams");
-
-const BodySchema = z
+const GrowthRecordUpsertBody = z
   .object({
     recorded_at: z
       .string()
@@ -56,7 +50,34 @@ const BodySchema = z
       .nullable()
       .openapi({ example: "감기 후 체중 감소 추정" }),
   })
-  .openapi("GrowthRecordUpsertBody");
+  .openapi({
+    ref: "GrowthRecordUpsertBody",
+    example: {
+      recorded_at: "2025-08-18",
+      height_cm: 132.4,
+      weight_kg: 29.1,
+      bmi: null,
+      notes: "감기 후 체중 감소 추정",
+    },
+  });
+
+const growthExample = {
+  id: "8a8d7c16-0b5a-4a4d-8a8f-8b2a2f4f7c3e",
+  child_id: "2b9a3e9f-4d38-4b5a-9a2a-0e6d2c0a8f00",
+  recorded_at: "2025-08-18",
+  height_cm: 132.4,
+  weight_kg: 29.1,
+  bmi: 16.6,
+  notes: "감기 후 체중 감소 추정",
+  created_at: "2025-08-18T13:12:34.000Z",
+  updated_at: "2025-08-18T13:12:34.000Z",
+};
+
+const ParamsSchema = z
+  .object({
+    childId: z.string().uuid(),
+  })
+  .openapi("GrowthRecordParams");
 
 defineRoute(router, {
   method: "post",
@@ -68,7 +89,16 @@ defineRoute(router, {
     params: ParamsSchema,
     body: {
       content: {
-        "application/json": { schema: BodySchema },
+        "application/json": {
+          schema: GrowthRecordUpsertBody,
+          example: {
+            recorded_at: "2025-08-18",
+            height_cm: 132.4,
+            weight_kg: 29.1,
+            bmi: null,
+            notes: "감기 후 체중 감소 추정",
+          },
+        },
       },
     },
   },
@@ -81,6 +111,7 @@ defineRoute(router, {
             success: z.literal(true),
             data: GrowthRecordSchema,
           }),
+          example: { success: true, data: growthExample },
         },
       },
     },
