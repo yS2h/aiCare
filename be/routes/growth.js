@@ -4,13 +4,7 @@ const { defineRoute } = require("../lib/route");
 const { success } = require("../utils/response");
 const { upsertGrowthRecord } = require("../services/growthRecordService");
 const { UnauthorizedError } = require("../utils/ApiError");
-const {
-  OpenAPIRegistry,
-  extendZodWithOpenApi,
-} = require("@asteasolutions/zod-to-openapi");
-
-extendZodWithOpenApi(z);
-const registry = new OpenAPIRegistry();
+const { registry } = require("../docs/openapi");
 
 const router = Router();
 
@@ -18,13 +12,17 @@ const GrowthRecordSchema = z
   .object({
     id: z.string().uuid(),
     child_id: z.string().uuid(),
-    recorded_at: z.string(), // 'YYYY-MM-DD'
-    height_cm: z.number(),
-    weight_kg: z.number(),
-    bmi: z.number().nullable(),
-    notes: z.string().nullable(),
-    created_at: z.string(),
-    updated_at: z.string(),
+    recorded_at: z.string().openapi({ format: "date", example: "2025-08-18" }),
+    height_cm: z.number().openapi({ example: 132.4 }),
+    weight_kg: z.number().openapi({ example: 29.1 }),
+    bmi: z.number().nullable().openapi({ example: 16.6 }),
+    notes: z.string().nullable().openapi({ example: "감기 후 체중 감소 추정" }),
+    created_at: z
+      .string()
+      .openapi({ format: "date-time", example: "2025-08-18T13:12:34.000Z" }),
+    updated_at: z
+      .string()
+      .openapi({ format: "date-time", example: "2025-08-18T13:12:34.000Z" }),
   })
   .openapi("GrowthRecord");
 
@@ -33,7 +31,7 @@ const GrowthRecordUpsertBody = z
     recorded_at: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .openapi({ example: "2025-08-18" }),
+      .openapi({ format: "date", example: "2025-08-18" }),
     height_cm: z.number().gt(0).lte(300).openapi({ example: 132.4 }),
     weight_kg: z.number().gt(0).lte(400).openapi({ example: 29.1 }),
     bmi: z
@@ -50,8 +48,7 @@ const GrowthRecordUpsertBody = z
       .nullable()
       .openapi({ example: "감기 후 체중 감소 추정" }),
   })
-  .openapi({
-    ref: "GrowthRecordUpsertBody",
+  .openapi("GrowthRecordUpsertBody", {
     example: {
       recorded_at: "2025-08-18",
       height_cm: 132.4,
@@ -74,20 +71,19 @@ const growthExample = {
 };
 
 const ParamsSchema = z
-  .object({
-    childId: z.string().uuid(),
-  })
+  .object({ childId: z.string().uuid() })
   .openapi("GrowthRecordParams");
 
 defineRoute(router, {
   method: "post",
   path: "/children/:childId/growth",
   docPath: "/api/children/{childId}/growth",
-  summary: "성장 이력 등록/수정 (UPSERT: child_id+recorded_at)",
+  summary: "성장 이력 등록/수정",
   tags: ["Growth"],
   request: {
     params: ParamsSchema,
     body: {
+      required: true,
       content: {
         "application/json": {
           schema: GrowthRecordUpsertBody,
