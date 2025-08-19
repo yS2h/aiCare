@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import api from '../instance'
 
 export type User = {
   id: string
@@ -15,8 +16,6 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User>(null)
   const [loading, setLoading] = useState(true)
@@ -24,18 +23,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' })
+      const res = await api.get('/auth/me')
 
       if (res.status === 200) {
-        const data = (await res.json()) as User
-        setUser(data ?? null)
-      } else if (res.status === 401 || res.status === 204) {
-        // 인증 x → 비로그인 상태
+        // 정상 로그인
+        setUser((res.data as User) ?? null)
+      } else if (res.status === 204) {
+        // 비로그인
         setUser(null)
       } else {
         setUser(null)
       }
-    } catch {
+    } catch (err: unknown) {
       setUser(null)
     } finally {
       setLoading(false)
@@ -44,16 +43,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch(`${API_BASE}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      })
+      await api.post('/auth/logout')
     } finally {
       setUser(null)
     }
   }, [])
 
-  // 앱 최초/홈 리다이렉트 직후 세션 확인
   useEffect(() => {
     void refresh()
   }, [refresh])

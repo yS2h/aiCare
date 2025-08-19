@@ -1,5 +1,5 @@
 import TopBar from '@/components/Topbar'
-import { useAuth } from '@/auth/AuthContext'
+import { useAuth } from '@/api/auth/AuthContext'
 import BottomNav from '@/components/BottomNav'
 
 export default function Home() {
