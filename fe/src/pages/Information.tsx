@@ -1,14 +1,16 @@
-// src/pages/Information.tsx
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav'
 import Button from '../components/Button'
 import api from '@/api/instance'
 
 export default function Information() {
+  const navigate = useNavigate()
+
   const [formData, setFormData] = useState({
     childName: '',
-    gender: '', // '남' | '여'
-    childBirth: '', // 'YYYY-MM-DD'
+    gender: '', 
+    childBirth: '', 
     childHeight: '',
     childWeight: '',
     fatherHeight: '',
@@ -31,6 +33,7 @@ export default function Information() {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault?.()
+    if (loading) return
     setError(null)
     setSuccess(null)
 
@@ -55,11 +58,10 @@ export default function Information() {
       setLoading(true)
       console.log('CALL baseURL =', api.defaults.baseURL)
 
-      const res = await api.post('/api/children', payload)
+      await api.post('/api/children', payload)
 
-      // 2xx면 성공 처리
-      setSuccess(res?.data?.message || '저장되었습니다.')
-      setError(null)
+      navigate('/Home')
+
     } catch (err: any) {
       setSuccess(null)
       setError(err?.response?.data?.message ?? err?.message ?? '요청 중 오류가 발생했습니다.')
@@ -83,7 +85,6 @@ export default function Information() {
           <p className="text-xs text-gray-800">서비스 이용을 위한 필수 정보를 입력해 주세요.</p>
         </div>
 
-        {/* form */}
         <form id="infoForm" onSubmit={handleSubmit} className="space-y-6">
           {/* 아이 이름 + 성별 */}
           <div className="grid grid-cols-2 gap-3">
@@ -96,6 +97,7 @@ export default function Information() {
                 onChange={handleInputChange}
                 className="w-full px-3 py-2.5 border text-sm rounded-md focus:outline-none focus:ring-1"
                 style={inputStyle}
+                placeholder="아이 이름을 입력하세요"
               />
             </div>
 
@@ -180,7 +182,7 @@ export default function Information() {
             />
           </div>
 
-          {/* ✅ 아이 키 / 몸무게 (다른 필드와 동일 스타일로 통일) */}
+          {/* 아이 키 / 몸무게 (다른 필드와 동일 스타일) */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">아이 키</label>
@@ -250,14 +252,13 @@ export default function Information() {
           {error && <p className="text-sm text-red-500">{error}</p>}
           {success && <p className="text-sm text-green-600">{success}</p>}
 
-          {/* 숨은 submit 버튼 (엔터 제출용) */}
           <button type="submit" className="hidden" />
         </form>
       </div>
 
-      {/* 하단 고정 버튼: form.submit 트리거 */}
       <div
         onClick={() => {
+          if (loading) return
           const formEl = document.getElementById('infoForm') as HTMLFormElement | null
           formEl?.requestSubmit()
         }}
