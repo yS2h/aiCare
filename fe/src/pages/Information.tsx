@@ -1,17 +1,22 @@
 import React, { useState } from 'react'
 import BottomNav from '../components/BottomNav'
 import Button from '../components/Button'
+import api from '@/api/instance'
 
 export default function Information() {
   const [formData, setFormData] = useState({
     childName: '',
-    gender: '',
-    childBirth: '',
+    gender: '', 
+    childBirth: '', 
     childHeight: '',
     childWeight: '',
     fatherHeight: '',
     motherHeight: ''
   })
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -21,6 +26,46 @@ export default function Information() {
     }))
   }
 
+  const toNum = (v: string) => (v.trim() === '' ? null : Number(v))
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+  e?.preventDefault?.()
+  setError(null)
+  setSuccess(null)
+
+  if (!formData.childName || !formData.gender || !formData.childBirth) {
+    setError('아이 이름 / 성별 / 생년월일은 필수입니다.')
+    return
+  }
+
+  const payload = {
+    name: formData.childName,
+    gender: formData.gender === '남' ? 'male' : 'female',
+    birth_date: formData.childBirth,
+    height: toNum(formData.childHeight),
+    weight: toNum(formData.childWeight),
+    father_height: toNum(formData.fatherHeight),
+    mother_height: toNum(formData.motherHeight)
+  }
+
+  try {
+    setLoading(true)
+    console.log('CALL baseURL =', api.defaults.baseURL)
+
+    const res = await api.post('/api/children', payload)
+
+    setSuccess(res?.data?.message || '저장되었습니다.')
+    setError(null)
+
+  } catch (err: any) {
+    setSuccess(null)
+    setError(err?.response?.data?.message ?? err?.message ?? '요청 중 오류가 발생했습니다.')
+  } finally {
+    setLoading(false)
+  }
+}
+
+
   const inputStyle = {
     borderColor: '#cdcdcd'
   }
@@ -28,7 +73,6 @@ export default function Information() {
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
       <div className="flex-1 max-w-md mx-auto w-full px-4 pt-8">
-        {/* 헤더 */}
         <div className="mb-8">
           <h1
             style={{ fontSize: '27px', fontWeight: 'bold', color: '#374151', marginBottom: '8px' }}
@@ -38,7 +82,7 @@ export default function Information() {
           <p className="text-xs text-gray-800">서비스 이용을 위한 필수 정보를 입력해 주세요.</p>
         </div>
 
-        <form className="space-y-6">
+        <form id="infoForm" onSubmit={handleSubmit} className="space-y-6">
           {/* 아이 이름 + 성별 */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -190,11 +234,23 @@ export default function Information() {
               />
             </div>
           </div>
+
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          {success && <p className="text-sm text-green-600">{success}</p>}
+
+          <button type="submit" className="hidden" />
         </form>
       </div>
 
-      {/* ✅ 하단 고정 버튼 */}
-      <Button label="aiCare 시작하기" withBottomNav={false} />
+      <div
+        onClick={() => {
+          const formEl = document.getElementById('infoForm') as HTMLFormElement | null
+          formEl?.requestSubmit()
+        }}
+      >
+        <Button label={loading ? '저장 중…' : 'aiCare 시작하기'} withBottomNav={false} />
+      </div>
+
       <BottomNav showBottomNav={false} />
     </div>
   )
