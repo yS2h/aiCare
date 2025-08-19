@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
-import { AuthProvider } from '@/auth/AuthContext'
+import { AuthProvider } from '@/api/auth/AuthContext.tsx'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
