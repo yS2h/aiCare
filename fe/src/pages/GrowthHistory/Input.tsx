@@ -1,6 +1,8 @@
 import React from 'react'
 import dayjs, { Dayjs } from 'dayjs'
 import 'dayjs/locale/ko'
+import Button from '@/components/Button'
+import usePostGrowth, { buildPostGrowthBody } from '@/api/Growth/usePostGrowth'
 
 type InputProps = {
   currentDate: Dayjs
@@ -8,6 +10,36 @@ type InputProps = {
 }
 
 export default function Input({ currentDate, onChangeDate }: InputProps) {
+  const [height, setHeight] = React.useState('')
+  const [weight, setWeight] = React.useState('')
+  const [note, setNote] = React.useState('')
+  const postGrowth = usePostGrowth()
+
+  const handleSave = async () => {
+    if (!height || !weight) {
+      alert('키와 몸무게는 모두 필수입니다.')
+      return
+    }
+    // (선택) 값 범위 간단 검증
+    const h = Number(height)
+    const w = Number(weight)
+    if (!Number.isFinite(h) || !Number.isFinite(w) || h <= 0 || w <= 0) {
+      alert('키/몸무게는 0보다 큰 숫자여야 합니다.')
+      return
+    }
+
+    const body = buildPostGrowthBody({ currentDate, height, weight, note })
+    try {
+      await postGrowth.mutateAsync(body)
+      // 성공 처리: 입력 초기화 등
+      setNote('')
+      setHeight('')
+      setWeight('')
+    } catch {
+      alert('저장 실패')
+    }
+  }
+
   const days = React.useMemo(() => {
     const start = currentDate.startOf('day').subtract(3, 'day')
     return Array.from({ length: 7 }, (_, i) => {
@@ -29,7 +61,33 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
   const [viewMonth, setViewMonth] = React.useState<Dayjs>(currentDate.startOf('month'))
   const popoverRef = React.useRef<HTMLDivElement>(null)
 
-  // currentDate 기준준
+  const stripRef = React.useRef<HTMLDivElement>(null)
+  const selectedRef = React.useRef<HTMLButtonElement>(null)
+
+  // currentDate 기준 스크롤
+  React.useEffect(() => {
+    if (!stripRef.current || !selectedRef.current) return
+
+    // 표준 API로 시도
+    try {
+      selectedRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      })
+      return
+    } catch {
+      // 일부 환경에서 폴백
+    }
+    const container = stripRef.current
+    const el = selectedRef.current
+    const containerRect = container.getBoundingClientRect()
+    const elRect = el.getBoundingClientRect()
+    const offset = elRect.left - containerRect.left + container.scrollLeft
+    const target = offset - container.clientWidth / 2 + elRect.width / 2
+    container.scrollTo({ left: target, behavior: 'smooth' })
+  }, [currentDate])
+
   React.useEffect(() => {
     setViewMonth(currentDate.startOf('month'))
   }, [currentDate])
@@ -54,12 +112,11 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
 
   // 달력용 유틸
   const weekDays = React.useMemo(() => {
-    const base = dayjs().locale('ko').startOf('week') // dayjs 기본: 일요일 시작
-    return Array.from({ length: 7 }, (_, i) => base.add(i, 'day').format('dd')) // '일','월',...
+    const base = dayjs().locale('ko').startOf('week')
+    return Array.from({ length: 7 }, (_, i) => base.add(i, 'day').format('dd'))
   }, [])
 
   const gridDays = React.useMemo(() => {
-    // 달력 그리드 (6주, 42칸)
     const start = viewMonth.startOf('month')
     const end = viewMonth.endOf('month')
     const gridStart = start.startOf('week')
@@ -189,25 +246,29 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
       </div>
 
       {/* 요일 선택 */}
-      <div className="-mx-2 px-2 overflow-x-auto no-scrollbar">
+      <div className="-mx-2 px-2 overflow-x-auto no-scrollbar" ref={stripRef}>
         <div className="flex gap-2 min-w-max">
-          {days.map((d, i) => (
-            <button
-              key={d.key}
-              onClick={() => onChangeDate?.(d.date)}
-              className={
-                'w-14 shrink-0 rounded-xl border text-center py-3 transition ' +
-                (i === selected
-                  ? 'bg-black text-white border-gray3'
-                  : 'bg-white text-gray1 border-gray3')
-              }
-              aria-pressed={i === selected}
-              aria-label={`${d.dayNum} ${d.weekday}`}
-            >
-              <div className="text-[15px] font-semibold leading-none">{d.dayNum}</div>
-              <div className="text-[11px] tracking-wide opacity-70 mt-1">{d.weekday}</div>
-            </button>
-          ))}
+          {days.map((d, i) => {
+            const isSelected = i === selected
+            return (
+              <button
+                key={d.key}
+                ref={isSelected ? selectedRef : undefined}
+                onClick={() => onChangeDate?.(d.date)}
+                className={
+                  'w-14 shrink-0 rounded-xl border text-center py-3 transition ' +
+                  (isSelected
+                    ? 'bg-black text-white border-gray3'
+                    : 'bg-white text-gray1 border-gray3')
+                }
+                aria-pressed={isSelected}
+                aria-label={`${d.dayNum} ${d.weekday}`}
+              >
+                <div className="text-[15px] font-semibold leading-none">{d.dayNum}</div>
+                <div className="text-[12px] tracking-wide opacity-70 mt-1">{d.weekday}</div>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -217,20 +278,33 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
           type="number"
           inputMode="decimal"
           placeholder="키 (cm)"
-          className="h-11 rounded-xl border border-gray3 px-4 text-[15px] placeholder:text-gray2 focus:outline-none focus:ring-1 focus:ring-gray3"
+          value={height}
+          onChange={e => setHeight(e.target.value)}
+          className="h-10 rounded-[10px] border border-gray3 px-4 text-[15px] placeholder:text-gray2 focus:outline-none focus:ring-1 focus:ring-gray3"
         />
         <input
           type="number"
           inputMode="decimal"
           placeholder="몸무게 (kg)"
-          className="h-11 rounded-xl border border-gray3 px-4 text-[15px] placeholder:text-gray2 focus:outline-none focus:ring-1 focus:ring-gray3"
+          value={weight}
+          onChange={e => setWeight(e.target.value)}
+          className="h-10 rounded-[10px] border border-gray3 px-4 text-[15px] placeholder:text-gray2 focus:outline-none focus:ring-1 focus:ring-gray3"
         />
       </div>
-      <textarea
-        rows={3}
-        placeholder="특이사항"
-        className="w-full rounded-xl border border-gray3 px-4 py-3 text-[15px] placeholder:text-gray2 focus:outline-none focus:ring-1 focus:ring-gray3"
-      />
+      <div className="grid gap-3">
+        <textarea
+          rows={3}
+          placeholder="특이사항"
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          className="w-full rounded-[10px] border border-gray3 px-4 py-3 text-[15px] placeholder:text-gray2 focus:outline-none focus:ring-1 focus:ring-gray3"
+        />
+        <Button
+          label={postGrowth.isPending ? '저장 중…' : '성장이력 저장하기'}
+          onClick={handleSave}
+          disabled={postGrowth.isPending}
+        />
+      </div>
     </section>
   )
 }
