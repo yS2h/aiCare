@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await api.get('/api/auth/me')
+      const res = await api.get('/auth/me')
 
       if (res.status === 200) {
         // 정상 로그인
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await api.post('/api/auth/logout')
+      await api.post('/auth/logout')
     } finally {
       setUser(null)
     }
