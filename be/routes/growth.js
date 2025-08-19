@@ -2,10 +2,11 @@ const { Router } = require("express");
 const { z } = require("zod");
 const { defineRoute } = require("../lib/route");
 const { success } = require("../utils/response");
-const { upsertGrowthRecord } = require("../services/growthRecordService");
+const {
+  upsertGrowthRecord,
+  listGrowthRecords,
+} = require("../services/growthRecordService");
 const { UnauthorizedError } = require("../utils/ApiError");
-const { registry } = require("../docs/openapi");
-
 const router = Router();
 
 const GrowthRecordSchema = z
@@ -132,6 +133,111 @@ defineRoute(router, {
     });
 
     return success(res, record);
+  },
+});
+
+const GrowthRecordListQuery = z
+  .object({
+    from: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional()
+      .openapi({
+        description: "시작 날짜",
+        format: "date",
+        example: "2025-08-01",
+      }),
+    to: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional()
+      .openapi({
+        description: "종료 날짜",
+        format: "date",
+        example: "2025-08-31",
+      }),
+    order: z
+      .enum(["asc", "desc"])
+      .optional()
+      .openapi({ example: "desc", description: "정렬" }),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(200)
+      .optional()
+      .openapi({ example: 50, description: "페이지 크기(기본 100, 최대 200)" }),
+    offset: z.coerce
+      .number()
+      .int()
+      .min(0)
+      .optional()
+      .openapi({ example: 0, description: "건너뛸 개수" }),
+  })
+  .openapi("GrowthRecordListQuery");
+
+const GrowthRecordListData = z
+  .object({
+    items: z.array(GrowthRecordSchema),
+    total: z.number().int(),
+  })
+  .openapi("GrowthRecordListData", {
+    example: {
+      items: [growthExample],
+      total: 1,
+    },
+  });
+
+defineRoute(router, {
+  method: "get",
+  path: "/children/:childId/growth",
+  docPath: "/api/children/{childId}/growth",
+  summary: "성장 이력 목록 조회",
+  tags: ["Growth"],
+  request: {
+    params: ParamsSchema,
+    query: GrowthRecordListQuery,
+  },
+  responses: {
+    200: {
+      description: "ok",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.literal(true),
+            data: GrowthRecordListData,
+          }),
+          example: {
+            success: true,
+            data: {
+              items: [growthExample],
+              total: 1,
+            },
+          },
+        },
+      },
+    },
+    401: { description: "unauthorized" },
+    404: { description: "child not found or not owned" },
+  },
+  handler: async (ctx, req, res) => {
+    const userId = req.session?.user?.id;
+    if (!userId) throw new UnauthorizedError("로그인이 필요합니다.");
+
+    const { childId } = ctx.params;
+    const { from, to, order = "desc", limit = 100, offset = 0 } = ctx.query;
+
+    const list = await listGrowthRecords({
+      userId,
+      childId,
+      from,
+      to,
+      order,
+      limit,
+      offset,
+    });
+
+    return success(res, list);
   },
 });
 
