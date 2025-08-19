@@ -1,6 +1,7 @@
 const { query } = require("../providers/db");
 const { v4: uuidv4 } = require("uuid");
 const { NotFoundError, BadRequestError } = require("../utils/ApiError");
+const { getChildIdOrThrow } = require("./childrenService");
 
 function calcBmi(heightCm, weightKg) {
   const h = Number(heightCm);
@@ -20,38 +21,56 @@ async function assertChildOwnedByUser(childId, userId) {
   }
 }
 
+/**
+ * 성장 이력 UPSERT
+ * @param {Object} args
+ * @param {string} args.userId
+ * @param {string=} args.childId
+ * @param {string} args.recordedAt
+ * @param {number} args.heightCm
+ * @param {number} args.weightKg
+ * @param {string=} args.notes
+ */
 async function upsertGrowthRecord({
   userId,
   childId,
   recordedAt,
   heightCm,
   weightKg,
-  bmi,
   notes,
 }) {
   if (!userId) throw new BadRequestError("로그인이 필요합니다.");
+  if (!recordedAt) throw new BadRequestError("recordedAt가 필요합니다.");
+  if (!(Number(heightCm) > 0) || !(Number(weightKg) > 0)) {
+    throw new BadRequestError("heightCm, weightKg는 양수여야 합니다.");
+  }
 
-  await assertChildOwnedByUser(childId, userId);
+  let effectiveChildId = childId;
+  if (effectiveChildId) {
+    await assertChildOwnedByUser(effectiveChildId, userId);
+  } else {
+    effectiveChildId = await getChildIdOrThrow(userId);
+  }
 
   const id = uuidv4();
-  const bmiValue = bmi ?? calcBmi(heightCm, weightKg);
+  const bmiValue = calcBmi(heightCm, weightKg);
 
   const sql = `
     INSERT INTO growth_record
       (id, child_id, recorded_at, height_cm, weight_kg, bmi, notes)
     VALUES
-      ($1, $2, $3, $4, $5, $6, $7)
+      ($1, $2, $3::date, $4, $5, $6, $7)
     ON CONFLICT (child_id, recorded_at) DO UPDATE SET
-      height_cm = EXCLUDED.height_cm,
-      weight_kg = EXCLUDED.weight_kg,
-      bmi       = EXCLUDED.bmi,
-      notes     = EXCLUDED.notes,
+      height_cm  = EXCLUDED.height_cm,
+      weight_kg  = EXCLUDED.weight_kg,
+      bmi        = EXCLUDED.bmi,
+      notes      = EXCLUDED.notes,
       updated_at = now()
     RETURNING *;
   `;
   const params = [
     id,
-    childId,
+    effectiveChildId,
     recordedAt,
     heightCm,
     weightKg,
@@ -62,47 +81,31 @@ async function upsertGrowthRecord({
   return rows[0];
 }
 
-async function listGrowthRecords({
-  userId,
-  childId,
-  from,
-  to,
-  order = "desc",
-  limit = 100,
-  offset = 0,
-}) {
+/**
+ * 성장 이력 목록 조회 (최신순, 전체)
+ * @param {Object} args
+ * @param {string} args.userId
+ * @param {string=} args.childId
+ * @returns {Promise<Array>}
+ */
+async function listGrowthRecords({ userId, childId }) {
   if (!userId) throw new BadRequestError("로그인이 필요합니다.");
-  await assertChildOwnedByUser(childId, userId);
 
-  const where = ["child_id = $1"];
-  const params = [childId];
-  let i = 2;
-
-  if (from) {
-    where.push(`recorded_at >= $${i++}`);
-    params.push(from);
-  }
-  if (to) {
-    where.push(`recorded_at <= $${i++}`);
-    params.push(to);
+  let effectiveChildId = childId;
+  if (effectiveChildId) {
+    await assertChildOwnedByUser(effectiveChildId, userId);
+  } else {
+    effectiveChildId = await getChildIdOrThrow(userId);
   }
 
-  const baseWhere = where.join(" AND ");
-
-  const countSql = `SELECT COUNT(*)::int AS total FROM growth_record WHERE ${baseWhere}`;
-  const { rows: countRows } = await query(countSql, params);
-  const total = countRows[0]?.total ?? 0;
-
-  const orderBy = order === "asc" ? "ASC" : "DESC";
-  const listSql = `
+  const sql = `
     SELECT id, child_id, recorded_at, height_cm, weight_kg, bmi, notes, created_at, updated_at
     FROM growth_record
-    WHERE ${baseWhere}
-    ORDER BY recorded_at ${orderBy}, id ${orderBy}
-    LIMIT $${i} OFFSET $${i + 1}
+    WHERE child_id = $1
+    ORDER BY recorded_at DESC, id DESC
   `;
-  const { rows } = await query(listSql, params.concat([limit, offset]));
-  return { items: rows, total };
+  const { rows } = await query(sql, [effectiveChildId]);
+  return rows;
 }
 
 module.exports = {
