@@ -62,6 +62,50 @@ async function upsertGrowthRecord({
   return rows[0];
 }
 
+async function listGrowthRecords({
+  userId,
+  childId,
+  from,
+  to,
+  order = "desc",
+  limit = 100,
+  offset = 0,
+}) {
+  if (!userId) throw new BadRequestError("로그인이 필요합니다.");
+  await assertChildOwnedByUser(childId, userId);
+
+  const where = ["child_id = $1"];
+  const params = [childId];
+  let i = 2;
+
+  if (from) {
+    where.push(`recorded_at >= $${i++}`);
+    params.push(from);
+  }
+  if (to) {
+    where.push(`recorded_at <= $${i++}`);
+    params.push(to);
+  }
+
+  const baseWhere = where.join(" AND ");
+
+  const countSql = `SELECT COUNT(*)::int AS total FROM growth_record WHERE ${baseWhere}`;
+  const { rows: countRows } = await query(countSql, params);
+  const total = countRows[0]?.total ?? 0;
+
+  const orderBy = order === "asc" ? "ASC" : "DESC";
+  const listSql = `
+    SELECT id, child_id, recorded_at, height_cm, weight_kg, bmi, notes, created_at, updated_at
+    FROM growth_record
+    WHERE ${baseWhere}
+    ORDER BY recorded_at ${orderBy}, id ${orderBy}
+    LIMIT $${i} OFFSET $${i + 1}
+  `;
+  const { rows } = await query(listSql, params.concat([limit, offset]));
+  return { items: rows, total };
+}
+
 module.exports = {
   upsertGrowthRecord,
+  listGrowthRecords,
 };
