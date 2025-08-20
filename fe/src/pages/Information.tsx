@@ -52,7 +52,7 @@ export default function Information() {
     setLoading(true)
     console.log('CALL baseURL =', api.defaults.baseURL)
 
-    const res = await api.post('/api/children', payload)
+    const res = await api.post('/children', payload)
 
     setSuccess(res?.data?.message || '저장되었습니다.')
     setError(null)
