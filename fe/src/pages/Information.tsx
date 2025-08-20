@@ -56,11 +56,10 @@ export default function Information() {
 
     try {
       setLoading(true)
-      console.log('CALL baseURL =', api.defaults.baseURL)
 
       await api.post('/children', payload)
 
-      navigate('/Home')
+      navigate('/', { replace: true })
     } catch (err: any) {
       setSuccess(null)
       setError(err?.response?.data?.message ?? err?.message ?? '요청 중 오류가 발생했습니다.')
@@ -246,11 +245,10 @@ export default function Information() {
           {error && <p className="text-sm text-red-500">{error}</p>}
           {success && <p className="text-sm text-green-600">{success}</p>}
 
-          <button type="submit" className="hidden" />
+          <div className="pt-2 pb-6">
+            <Button label="aiCare 시작하기" form="infoForm" type="submit" disabled={loading} />
+          </div>
         </form>
-      </div>
-      <div className="px-6 pt-2 pb-6">
-        <Button label="aiCare 시작하기" />
       </div>
 
       <BottomNav showBottomNav={false} />

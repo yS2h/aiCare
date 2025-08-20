@@ -8,17 +8,15 @@ type Props = { mode?: 'auth' | 'guest' }
 export default function ProtectedRoute({ mode = 'auth' }: Props) {
   const { user, loading } = useAuth()
   const location = useLocation()
+  const isAuthed = !!user?.id
 
-  // ✅ 모든 Hook은 무조건 같은 순서/갯수로 호출되게 최상단에
   const [childLoading, setChildLoading] = useState(false)
   const [hasChild, setHasChild] = useState<boolean | null>(null)
 
-  // ✅ useEffect도 조건부 return 위로 이동 (내부에서만 가드)
   useEffect(() => {
     let cancelled = false
 
-    // 게스트 라우트거나 사용자 없으면 조회하지 않음
-    if (mode === 'guest' || !user) {
+    if (mode === 'guest' || !isAuthed) {
       setHasChild(null)
       setChildLoading(false)
       return () => {
@@ -29,16 +27,17 @@ export default function ProtectedRoute({ mode = 'auth' }: Props) {
     const fetchChild = async () => {
       setChildLoading(true)
       try {
-        type MeCheck = {
-          success: boolean
-          message: string
-          data: { has_child: boolean; child_id?: string; child_name?: string }
-        }
-        const res = await api.get<MeCheck>('/me/check') // 임시 엔드포인트
+        const res = await api.get('/me/check')
         const exists = !!res?.data?.data?.has_child
         if (!cancelled) setHasChild(exists)
-      } catch {
-        if (!cancelled) setHasChild(false)
+      } catch (err: any) {
+        if (!cancelled) {
+          if (err?.response?.status === 401) {
+            setHasChild(null)
+          } else {
+            setHasChild(false)
+          }
+        }
       } finally {
         if (!cancelled) setChildLoading(false)
       }
@@ -48,9 +47,8 @@ export default function ProtectedRoute({ mode = 'auth' }: Props) {
     return () => {
       cancelled = true
     }
-  }, [user, mode])
+  }, [isAuthed, mode])
 
-  // ====== 여기부터는 렌더 분기(return) ======
   if (loading) {
     return (
       <div className="min-h-screen bg-main text-white flex items-center justify-center">
@@ -60,10 +58,10 @@ export default function ProtectedRoute({ mode = 'auth' }: Props) {
   }
 
   if (mode === 'guest') {
-    return user ? <Navigate to="/" replace /> : <Outlet />
+    return isAuthed ? <Navigate to="/" replace /> : <Outlet />
   }
 
-  if (!user) {
+  if (!isAuthed) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 

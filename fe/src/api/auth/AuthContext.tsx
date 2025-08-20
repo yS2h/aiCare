@@ -26,7 +26,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await api.get('/auth/me')
 
       if (res.status === 200) {
-        setUser((res.data as User) ?? null)
+        const raw = res.data as any
+        const normalized =
+          raw && typeof raw === 'object' && typeof raw.id === 'string'
+            ? { id: raw.id, name: raw.name, avatarUrl: raw.avatarUrl }
+            : null
+        setUser(normalized)
       } else if (res.status === 204) {
         setUser(null)
       } else {
