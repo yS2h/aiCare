@@ -27,10 +27,10 @@ const ChildStatusZ = z
 
 defineRoute(router, {
   method: "get",
-  path: "/child",
-  docPath: "/api/me/child",
+  path: "/check",
+  docPath: "/api/me/check",
   summary: "자녀 보유 확인",
-  tags: ["Me", "Children"],
+  tags: ["Me"],
   responses: {
     200: {
       description: "OK",
