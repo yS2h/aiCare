@@ -100,4 +100,35 @@ defineRoute(router, {
   },
 });
 
+defineRoute(router, {
+  method: "get",
+  path: "/growth",
+  docPath: "/api/growth",
+  summary: "성장 이력 전체 조회",
+  tags: ["Growth"],
+  responses: {
+    200: {
+      description: "ok",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.literal(true),
+            data: z.array(GrowthRecordSchema),
+          }),
+        },
+      },
+    },
+    401: { description: "unauthorized" },
+    404: { description: "child not found" },
+    400: { description: "invalid state (multiple children)" },
+  },
+  handler: async (_ctx, req, res) => {
+    const userId = req.session?.user?.id;
+    if (!userId) throw new UnauthorizedError("로그인이 필요합니다.");
+
+    const rows = await listGrowthRecords({ userId });
+    return success(res, rows);
+  },
+});
+
 module.exports = router;
