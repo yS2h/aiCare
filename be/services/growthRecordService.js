@@ -10,7 +10,7 @@ function calcBmi(heightCm, weightKg) {
   return Math.round(bmi * 10) / 10;
 }
 
-async function resolveSingleChildIdByUser(userId) {
+async function findChildIdByUserId(userId) {
   const { rows } = await query(
     `SELECT id FROM children WHERE user_id = $1 ORDER BY created_at ASC`,
     [userId]
@@ -38,7 +38,7 @@ async function upsertGrowthRecord({
 }) {
   if (!userId) throw new BadRequestError("로그인이 필요합니다.");
 
-  const childId = await resolveSingleChildIdByUser(userId);
+  const childId = await findChildIdByUserId(userId);
   const id = uuidv4();
   const bmiValue = bmi ?? calcBmi(heightCm, weightKg);
 
@@ -68,6 +68,24 @@ async function upsertGrowthRecord({
   return rows[0];
 }
 
+async function listGrowthRecords({ userId }) {
+  if (!userId) throw new BadRequestError("로그인이 필요합니다.");
+  const childId = await findChildIdByUserId(userId);
+
+  const { rows } = await query(
+    `
+    SELECT *
+    FROM growth_record
+    WHERE child_id = $1
+    ORDER BY recorded_at DESC, updated_at DESC, created_at DESC
+    `,
+    [childId]
+  );
+
+  return rows;
+}
+
 module.exports = {
   upsertGrowthRecord,
+  listGrowthRecords,
 };
