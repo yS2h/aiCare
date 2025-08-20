@@ -1,38 +1,41 @@
-// src/components/Button.tsx
 import React from 'react'
 
-interface ButtonProps {
+export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   label: string
-  withBottomNav?: boolean // 기본 true
 }
 
-const Button: React.FC<ButtonProps> = ({ label, withBottomNav = true }) => {
+export default function Button({
+  label,
+  disabled,
+  className,
+  style,
+  type = 'button',
+  ...rest
+}: ButtonProps) {
   return (
-    <div
-      className="fixed left-1/2 -translate-x-1/2 w-full max-w-[600px] px-6"
-      style={{
-        bottom: withBottomNav
-          ? 'calc(var(--bottom-nav-h, 72px) + var(--button-gap, 24px) + env(safe-area-inset-bottom))'
-          : 'calc(24px + env(safe-area-inset-bottom))'
-      }}
-    >
+    <div className="w-full flex justify-center">
       <button
+        type={type}
+        disabled={disabled}
         style={{
           backgroundColor: 'var(--color-main)',
-          color: '#fff',
-          fontSize: '16px',
+          color: 'white',
+          fontSize: '15px',
           fontWeight: 500,
           padding: '12px 24px',
           border: 'none',
           borderRadius: '10px',
           width: '100%',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.08), 0 6px 18px rgba(0,0,0,0.06)'
+          maxWidth: '600px',
+          opacity: disabled ? 0.6 : 1,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          ...style
         }}
+        className={className}
+        {...rest}
       >
         {label}
       </button>
     </div>
   )
 }
-
-export default Button

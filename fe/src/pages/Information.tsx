@@ -256,15 +256,8 @@ export default function Information() {
         </form>
       </div>
 
-      <div
-        onClick={() => {
-          if (loading) return
-          const formEl = document.getElementById('infoForm') as HTMLFormElement | null
-          formEl?.requestSubmit()
-        }}
-      >
-        <Button label={loading ? '저장 중…' : 'aiCare 시작하기'} withBottomNav={false} />
-      </div>
+      {/* ✅ 하단 고정 버튼 */}
+      <Button label="aiCare 시작하기" />
 
       <BottomNav showBottomNav={false} />
     </div>
