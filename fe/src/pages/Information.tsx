@@ -58,7 +58,7 @@ export default function Information() {
       setLoading(true)
       console.log('CALL baseURL =', api.defaults.baseURL)
 
-      await api.post('/api/children', payload)
+      await api.post('/children', payload)
 
       navigate('/Home')
 
