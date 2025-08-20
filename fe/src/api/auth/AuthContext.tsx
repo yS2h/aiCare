@@ -23,11 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       setLoading(true)
-<<<<<<< HEAD
       const res = await api.get('/auth/me')
-=======
-      const res = await api.get('/auth/me');
->>>>>>> Feat/#13
 
       if (res.status === 200) {
         setUser((res.data as User) ?? null)
