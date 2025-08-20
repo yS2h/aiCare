@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require("uuid");
 const { query } = require("../providers/db");
+const { ApiError } = require("../utils/ApiError");
 
 async function upsertChild(userId, payload) {
   const id = uuidv4();
@@ -26,12 +27,12 @@ async function upsertChild(userId, payload) {
     id,
     userId,
     payload.name,
-    payload.gender, // 'male' | 'female'
-    payload.birth_date, // 'YYYY-MM-DD'
-    payload.height, // number
-    payload.weight, // number
-    payload.father_height, // number
-    payload.mother_height, // number
+    payload.gender,
+    payload.birth_date,
+    payload.height,
+    payload.weight,
+    payload.father_height,
+    payload.mother_height,
   ];
 
   const { rows } = await query(sql, params);
@@ -46,4 +47,15 @@ async function getChildByUserId(userId) {
   return rows[0] || null;
 }
 
-module.exports = { upsertChild, getChildByUserId };
+async function getChildIdOrThrow(userId) {
+  const { rows } = await query(
+    `SELECT id FROM children WHERE user_id = $1 LIMIT 1`,
+    [userId]
+  );
+  if (rows.length === 0) {
+    throw new ApiError(404, "등록된 아이 정보가 없습니다.");
+  }
+  return rows[0].id;
+}
+
+module.exports = { upsertChild, getChildByUserId, getChildIdOrThrow };

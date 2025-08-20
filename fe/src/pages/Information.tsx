@@ -1,17 +1,25 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav'
 import Button from '../components/Button'
+import api from '@/api/instance'
 
 export default function Information() {
+  const navigate = useNavigate()
+
   const [formData, setFormData] = useState({
     childName: '',
-    gender: '',
-    childBirth: '',
+    gender: '', 
+    childBirth: '', 
     childHeight: '',
     childWeight: '',
     fatherHeight: '',
     motherHeight: ''
   })
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -21,9 +29,48 @@ export default function Information() {
     }))
   }
 
-  const inputStyle = {
-    borderColor: '#cdcdcd'
+  const toNum = (v: string) => (v.trim() === '' ? null : Number(v))
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault?.()
+    if (loading) return
+    setError(null)
+    setSuccess(null)
+
+    // 필수값 검증
+    if (!formData.childName || !formData.gender || !formData.childBirth) {
+      setError('아이 이름 / 성별 / 생년월일은 필수입니다.')
+      return
+    }
+
+    // 서버 페이로드
+    const payload = {
+      name: formData.childName,
+      gender: formData.gender === '남' ? 'male' : 'female',
+      birth_date: formData.childBirth,
+      height: toNum(formData.childHeight),
+      weight: toNum(formData.childWeight),
+      father_height: toNum(formData.fatherHeight),
+      mother_height: toNum(formData.motherHeight)
+    }
+
+    try {
+      setLoading(true)
+      console.log('CALL baseURL =', api.defaults.baseURL)
+
+      await api.post('/children', payload)
+
+      navigate('/Home')
+
+    } catch (err: any) {
+      setSuccess(null)
+      setError(err?.response?.data?.message ?? err?.message ?? '요청 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const inputStyle = { borderColor: '#cdcdcd' as const }
 
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
@@ -38,7 +85,7 @@ export default function Information() {
           <p className="text-xs text-gray-800">서비스 이용을 위한 필수 정보를 입력해 주세요.</p>
         </div>
 
-        <form className="space-y-6">
+        <form id="infoForm" onSubmit={handleSubmit} className="space-y-6">
           {/* 아이 이름 + 성별 */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -121,21 +168,21 @@ export default function Information() {
               className="w-full px-3 py-2.5 pt-3 border text-sm rounded-md focus:outline-none focus:ring-1 text-gray-400"
               style={inputStyle}
               onFocus={e => {
-                e.target.style.borderColor = '#cdcdcd'
-                e.target.style.setProperty('--tw-ring-color', '#cdcdcd')
-                e.target.classList.remove('text-gray-400')
-                e.target.classList.add('text-gray-900')
+                e.currentTarget.style.borderColor = '#cdcdcd'
+                e.currentTarget.style.setProperty('--tw-ring-color', '#cdcdcd')
+                e.currentTarget.classList.remove('text-gray-400')
+                e.currentTarget.classList.add('text-gray-900')
               }}
               onBlur={e => {
-                if (!e.target.value) {
-                  e.target.classList.remove('text-gray-900')
-                  e.target.classList.add('text-gray-400')
+                if (!e.currentTarget.value) {
+                  e.currentTarget.classList.remove('text-gray-900')
+                  e.currentTarget.classList.add('text-gray-400')
                 }
               }}
             />
           </div>
 
-          {/* 아이 키 / 몸무게 */}
+          {/* 아이 키 / 몸무게 (다른 필드와 동일 스타일) */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">아이 키</label>
@@ -147,6 +194,9 @@ export default function Information() {
                 className="w-full px-3 py-2.5 border text-sm rounded-md focus:outline-none focus:ring-1"
                 style={inputStyle}
                 placeholder="cm"
+                step="0.1"
+                min="0"
+                inputMode="decimal"
               />
             </div>
             <div className="space-y-2">
@@ -156,9 +206,12 @@ export default function Information() {
                 name="childWeight"
                 value={formData.childWeight}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border text-sm rounded-md focus:ring-1 focus:outline-none"
+                className="w-full px-3 py-2.5 border text-sm rounded-md focus:outline-none focus:ring-1"
                 style={inputStyle}
                 placeholder="kg"
+                step="0.1"
+                min="0"
+                inputMode="decimal"
               />
             </div>
           </div>
@@ -175,6 +228,8 @@ export default function Information() {
                 className="w-full px-3 py-2.5 border text-sm rounded-md focus:outline-none focus:ring-1"
                 style={inputStyle}
                 placeholder="cm"
+                step="0.1"
+                min="0"
               />
             </div>
             <div className="space-y-2">
@@ -187,14 +242,23 @@ export default function Information() {
                 className="w-full px-3 py-2.5 border text-sm rounded-md focus:outline-none focus:ring-1"
                 style={inputStyle}
                 placeholder="cm"
+                step="0.1"
+                min="0"
               />
             </div>
           </div>
+
+          {/* 메시지 */}
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          {success && <p className="text-sm text-green-600">{success}</p>}
+
+          <button type="submit" className="hidden" />
         </form>
       </div>
 
       {/* ✅ 하단 고정 버튼 */}
       <Button label="aiCare 시작하기" />
+
       <BottomNav showBottomNav={false} />
     </div>
   )

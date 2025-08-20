@@ -10,19 +10,26 @@ function calcBmi(heightCm, weightKg) {
   return Math.round(bmi * 10) / 10;
 }
 
-async function assertChildOwnedByUser(childId, userId) {
+async function findChildIdByUserId(userId) {
   const { rows } = await query(
-    "SELECT 1 FROM children WHERE id = $1 AND user_id = $2",
-    [childId, userId]
+    `SELECT id FROM children WHERE user_id = $1 ORDER BY created_at ASC`,
+    [userId]
   );
   if (rows.length === 0) {
-    throw new NotFoundError("해당 아이를 찾을 수 없거나 접근 권한이 없습니다.");
+    throw new NotFoundError(
+      "등록된 아이가 없습니다. 먼저 아이 정보를 등록하세요."
+    );
   }
+  if (rows.length > 1) {
+    throw new BadRequestError(
+      "한 유저에 아이가 여러 명입니다. 관리자에게 문의하세요."
+    );
+  }
+  return rows[0].id;
 }
 
 async function upsertGrowthRecord({
   userId,
-  childId,
   recordedAt,
   heightCm,
   weightKg,
@@ -31,8 +38,7 @@ async function upsertGrowthRecord({
 }) {
   if (!userId) throw new BadRequestError("로그인이 필요합니다.");
 
-  await assertChildOwnedByUser(childId, userId);
-
+  const childId = await findChildIdByUserId(userId);
   const id = uuidv4();
   const bmiValue = bmi ?? calcBmi(heightCm, weightKg);
 
@@ -62,6 +68,24 @@ async function upsertGrowthRecord({
   return rows[0];
 }
 
+async function listGrowthRecords({ userId }) {
+  if (!userId) throw new BadRequestError("로그인이 필요합니다.");
+  const childId = await findChildIdByUserId(userId);
+
+  const { rows } = await query(
+    `
+    SELECT *
+    FROM growth_record
+    WHERE child_id = $1
+    ORDER BY recorded_at DESC, updated_at DESC, created_at DESC
+    `,
+    [childId]
+  );
+
+  return rows;
+}
+
 module.exports = {
   upsertGrowthRecord,
+  listGrowthRecords,
 };
