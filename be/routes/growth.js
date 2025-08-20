@@ -59,7 +59,7 @@ const BodySchema = z
 defineRoute(router, {
   method: "post",
   path: "/growth",
-  docPath: "/api/children/growth",
+  docPath: "/api/growth",
   summary: "성장 이력 등록/수정",
   tags: ["Growth"],
   request: {

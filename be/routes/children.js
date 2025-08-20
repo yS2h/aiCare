@@ -63,7 +63,7 @@ const ApiSuccessChildZ = z
 registry.registerPath({
   method: "post",
   path: "/api/children",
-  summary: "아이 정보 등록/수정 (UPSERT by user_id)",
+  summary: "아이 정보 등록/수정",
   tags: ["Children"],
   request: {
     body: {
