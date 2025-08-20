@@ -1,104 +1,102 @@
-const express = require("express");
+const { Router } = require("express");
 const { z } = require("zod");
 const { defineRoute } = require("../lib/route");
-const { query } = require("../providers/db");
 const { success } = require("../utils/response");
-const {
-  NotFoundError,
-  UnauthorizedError,
-  BadRequestError,
-} = require("../utils/ApiError");
+const { upsertGrowthRecord } = require("../services/growthRecordService");
+const { UnauthorizedError } = require("../utils/ApiError");
+const { extendZodWithOpenApi } = require("@asteasolutions/zod-to-openapi");
 
-const router = express.Router();
+extendZodWithOpenApi(z);
 
-const paramsSchema = z.object({
-  childId: z.string().uuid(),
-});
+const router = Router();
 
-const createBodySchema = z.object({
-  height: z.number().positive(),
-  weight: z.number().positive(),
-  measured_at: z.string().datetime().optional(),
-});
+const GrowthRecordSchema = z
+  .object({
+    id: z.string().uuid(),
+    child_id: z.string().uuid(),
+    recorded_at: z.string(),
+    height_cm: z.number(),
+    weight_kg: z.number(),
+    bmi: z.number().nullable(),
+    notes: z.string().nullable(),
+    created_at: z.string(),
+    updated_at: z.string(),
+  })
+  .openapi("GrowthRecord");
+
+const BodySchema = z
+  .object({
+    recorded_at: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .openapi({ example: "2025-08-18" }),
+    height_cm: z.number().gt(0).lte(300).openapi({ example: 132.4 }),
+    weight_kg: z.number().gt(0).lte(400).openapi({ example: 29.1 }),
+    bmi: z
+      .number()
+      .gt(0)
+      .lte(200)
+      .optional()
+      .nullable()
+      .openapi({ example: 16.6 }),
+    notes: z
+      .string()
+      .max(2000)
+      .optional()
+      .nullable()
+      .openapi({ example: "감기 후 체중 감소 추정" }),
+  })
+  .openapi("GrowthRecordUpsertBody", {
+    example: {
+      recorded_at: "2025-08-18",
+      height_cm: 132.4,
+      weight_kg: 29.1,
+      bmi: 16.6,
+      notes: "감기 후 체중 감소 추정",
+    },
+  });
 
 defineRoute(router, {
   method: "post",
-  path: "/children/:childId/growth",
-  summary: "성장이력 등록",
+  path: "/growth",
+  docPath: "/api/children/growth",
+  summary: "성장 이력 등록/수정",
   tags: ["Growth"],
-  security: [{ session: [] }, { bearerAuth: [] }],
   request: {
-    params: paramsSchema,
-    body: createBodySchema,
+    body: BodySchema,
   },
   responses: {
-    200: { description: "OK" },
-    401: { description: "Unauthorized" },
-    404: { description: "Child Not Found" },
+    200: {
+      description: "ok",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.literal(true),
+            data: GrowthRecordSchema,
+          }),
+        },
+      },
+    },
+    401: { description: "unauthorized" },
+    404: { description: "child not found" },
+    400: { description: "invalid state (multiple children)" },
   },
-  handler: async (req) => {
-    const userId = req.user?.id;
-    if (!userId) throw new UnauthorizedError();
+  handler: async (ctx, req, res) => {
+    const userId = req.session?.user?.id;
+    if (!userId) throw new UnauthorizedError("로그인이 필요합니다.");
 
-    const { childId } = req.params;
-    const { height, weight, measured_at } = req.body;
+    const { recorded_at, height_cm, weight_kg, bmi, notes } = ctx.body;
 
-    const { rows: childRows } = await query(
-      "SELECT id FROM children WHERE id = $1 AND user_id = $2",
-      [childId, userId]
-    );
-    if (childRows.length === 0) throw new NotFoundError("Child not found");
+    const record = await upsertGrowthRecord({
+      userId,
+      recordedAt: recorded_at,
+      heightCm: height_cm,
+      weightKg: weight_kg,
+      bmi,
+      notes,
+    });
 
-    const { rows } = await query(
-      `
-      INSERT INTO growths (id, child_id, height, weight, measured_at)
-      VALUES (gen_random_uuid(), $1, $2, $3, COALESCE($4, NOW()))
-      RETURNING id, child_id, height, weight, measured_at
-      `,
-      [childId, height, weight, measured_at ?? null]
-    );
-
-    return success(rows[0]);
-  },
-});
-
-defineRoute(router, {
-  method: "get",
-  path: "/children/:childId/growth",
-  summary: "성장이력 목록",
-  tags: ["Growth"],
-  security: [{ session: [] }, { bearerAuth: [] }],
-  request: {
-    params: paramsSchema,
-  },
-  responses: {
-    200: { description: "OK" },
-    401: { description: "Unauthorized" },
-    404: { description: "Child Not Found" },
-  },
-  handler: async (req) => {
-    const userId = req.user?.id;
-    if (!userId) throw new UnauthorizedError();
-
-    const { childId } = req.params;
-
-    const { rows: childRows } = await query(
-      "SELECT id FROM children WHERE id = $1 AND user_id = $2",
-      [childId, userId]
-    );
-    if (childRows.length === 0) throw new NotFoundError("Child not found");
-
-    const { rows } = await query(
-      `
-      SELECT id, child_id, height, weight, measured_at
-      FROM growths
-      WHERE child_id = $1
-      ORDER BY measured_at DESC
-      `,
-      [childId]
-    );
-
-    return success(rows);
+    return success(res, record);
   },
 });
 
