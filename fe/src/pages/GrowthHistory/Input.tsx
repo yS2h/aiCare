@@ -1,8 +1,7 @@
-import React from 'react'
+import * as React from 'react'
 import dayjs, { Dayjs } from 'dayjs'
-import 'dayjs/locale/ko'
+import { upsertGrowth, type GrowthRecordUpsertBody } from '@/api/Growth/usePostGrowth'
 import Button from '@/components/Button'
-import usePostGrowth, { buildPostGrowthBody } from '@/api/Growth/usePostGrowth'
 
 type InputProps = {
   currentDate: Dayjs
@@ -13,30 +12,46 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
   const [height, setHeight] = React.useState('')
   const [weight, setWeight] = React.useState('')
   const [note, setNote] = React.useState('')
-  const postGrowth = usePostGrowth()
+  const [open, setOpen] = React.useState(false)
+  const [viewMonth, setViewMonth] = React.useState<Dayjs>(currentDate.startOf('month'))
+  const [saving, setSaving] = React.useState(false)
+
+  const popoverRef = React.useRef<HTMLDivElement>(null)
+  const stripRef = React.useRef<HTMLDivElement>(null)
+  const selectedRef = React.useRef<HTMLButtonElement>(null)
 
   const handleSave = async () => {
     if (!height || !weight) {
       alert('키와 몸무게는 모두 필수입니다.')
       return
     }
-    // (선택) 값 범위 간단 검증
-    const h = Number(height)
-    const w = Number(weight)
+    const h = parseFloat(height)
+    const w = parseFloat(weight)
     if (!Number.isFinite(h) || !Number.isFinite(w) || h <= 0 || w <= 0) {
       alert('키/몸무게는 0보다 큰 숫자여야 합니다.')
       return
     }
 
-    const body = buildPostGrowthBody({ currentDate, height, weight, note })
+    const body: GrowthRecordUpsertBody = {
+      recorded_at: currentDate.format('YYYY-MM-DD'),
+      height_cm: h,
+      weight_kg: w,
+      bmi: null,
+      notes: note.trim() || null
+    }
+
     try {
-      await postGrowth.mutateAsync(body)
-      // 성공 처리: 입력 초기화 등
+      setSaving(true)
+      await upsertGrowth(body)
       setNote('')
       setHeight('')
       setWeight('')
-    } catch {
+      alert('저장 완료')
+    } catch (e) {
+      console.error(e)
       alert('저장 실패')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -56,19 +71,8 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
   const selected = days.findIndex(x => x.date.isSame(currentDate, 'day'))
   const label = currentDate.format('YYYY.MM.DD')
 
-  // 달력 팝오버
-  const [open, setOpen] = React.useState(false)
-  const [viewMonth, setViewMonth] = React.useState<Dayjs>(currentDate.startOf('month'))
-  const popoverRef = React.useRef<HTMLDivElement>(null)
-
-  const stripRef = React.useRef<HTMLDivElement>(null)
-  const selectedRef = React.useRef<HTMLButtonElement>(null)
-
-  // currentDate 기준 스크롤
   React.useEffect(() => {
     if (!stripRef.current || !selectedRef.current) return
-
-    // 표준 API로 시도
     try {
       selectedRef.current.scrollIntoView({
         behavior: 'smooth',
@@ -76,9 +80,7 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
         inline: 'center'
       })
       return
-    } catch {
-      // 일부 환경에서 폴백
-    }
+    } catch {}
     const container = stripRef.current
     const el = selectedRef.current
     const containerRect = container.getBoundingClientRect()
@@ -92,7 +94,6 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
     setViewMonth(currentDate.startOf('month'))
   }, [currentDate])
 
-  // 닫기
   React.useEffect(() => {
     if (!open) return
     const onDown = (e: MouseEvent) => {
@@ -110,7 +111,6 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
     }
   }, [open])
 
-  // 달력용 유틸
   const weekDays = React.useMemo(() => {
     const base = dayjs().locale('ko').startOf('week')
     return Array.from({ length: 7 }, (_, i) => base.add(i, 'day').format('dd'))
@@ -277,6 +277,7 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
         <input
           type="number"
           inputMode="decimal"
+          step="0.1"
           placeholder="키 (cm)"
           value={height}
           onChange={e => setHeight(e.target.value)}
@@ -285,6 +286,7 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
         <input
           type="number"
           inputMode="decimal"
+          step="0.1"
           placeholder="몸무게 (kg)"
           value={weight}
           onChange={e => setWeight(e.target.value)}
@@ -300,9 +302,9 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
           className="w-full rounded-[10px] border border-gray3 px-4 py-3 text-[15px] placeholder:text-gray2 focus:outline-none focus:ring-1 focus:ring-gray3"
         />
         <Button
-          label={postGrowth.isPending ? '저장 중…' : '성장이력 저장하기'}
+          label={saving ? '저장 중…' : '성장이력 저장하기'}
           onClick={handleSave}
-          disabled={postGrowth.isPending}
+          disabled={saving}
         />
       </div>
     </section>
