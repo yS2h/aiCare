@@ -73,7 +73,7 @@ export default function Information() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
-      <div className="flex-1 max-w-md mx-auto w-full px-4 pt-8">
+      <div className="flex-1 max-w-md mx-auto w-full px-6 pt-8">
         {/* 헤더 */}
         <div className="mb-8">
           <h1 style={{ fontSize: '27px', fontWeight: 'bold', color: 'main', marginBottom: '8px' }}>
@@ -94,7 +94,7 @@ export default function Information() {
                 onChange={handleInputChange}
                 className="w-full px-3 py-2.5 border text-[15px] rounded-md focus:outline-none focus:ring-1 text-gray2"
                 style={inputStyle}
-                placeholder="아이 이름을 입력하세요"
+                placeholder="이름을 입력하세요"
               />
             </div>
 
@@ -249,8 +249,9 @@ export default function Information() {
           <button type="submit" className="hidden" />
         </form>
       </div>
-
-      <Button label="aiCare 시작하기" />
+      <div className="px-6 pt-2 pb-6">
+        <Button label="aiCare 시작하기" />
+      </div>
 
       <BottomNav showBottomNav={false} />
     </div>
