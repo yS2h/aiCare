@@ -58,4 +58,23 @@ async function getChildIdOrThrow(userId) {
   return rows[0].id;
 }
 
-module.exports = { upsertChild, getChildByUserId, getChildIdOrThrow };
+async function getChildStatus(userId) {
+  const { rows } = await query(
+    `SELECT id, name
+       FROM children
+      WHERE user_id = $1
+      LIMIT 1`,
+    [userId]
+  );
+  if (rows.length === 0) {
+    return { has_child: false, child_id: null, child_name: null };
+  }
+  return { has_child: true, child_id: rows[0].id, child_name: rows[0].name };
+}
+
+module.exports = {
+  upsertChild,
+  getChildByUserId,
+  getChildIdOrThrow,
+  getChildStatus,
+};
