@@ -45,7 +45,7 @@ export default function ProtectedRoute({ mode = 'auth', requireChild = false }: 
     )
   }
 
-  // 게스트 전용(로그인 상태면 못 들어옴)
+  // 게스트 전용
   if (mode === 'guest') {
     return isAuthed ? <Navigate to="/" replace /> : <Outlet />
   }
