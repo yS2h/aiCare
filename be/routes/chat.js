@@ -1,73 +1,177 @@
-// routes/chat.js
-const express = require('express');
-const router = express.Router();
-const OpenAI = require('openai');
+const { Router } = require("express");
+const { z } = require("zod");
+const { extendZodWithOpenApi } = require("@asteasolutions/zod-to-openapi");
+const { defineRoute } = require("../lib/route");
+const { success } = require("../utils/response");
+const { UnauthorizedError } = require("../utils/ApiError");
+const {
+  chatAndStore,
+  listMessages,
+  ensureConversationOwned,
+  listMyConversations,
+} = require("../services/chatService");
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+extendZodWithOpenApi(z);
+const router = Router();
 
-/**
- * 일반(논-스트리밍) 채팅
- * req.body = { messages: [{role:'system'|'user'|'assistant', content:string}], model?: string, store?: boolean }
- * res = { reply: { role:'assistant', content:string } }
- */
-router.post('/', async (req, res) => {
-  try {
-    const { messages, model = 'gpt-4o-mini', store = true } = req.body || {};
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({ error: 'messages가 필요합니다.' });
-    }
-
-    const completion = await openai.chat.completions.create({
-      model,
-      store,
-      messages,
-    });
-
-    const reply = completion.choices?.[0]?.message || { role: 'assistant', content: '' };
-    return res.json({ reply });
-  } catch (err) {
-    console.error('[CHAT]', err);
-    return res.status(500).json({ error: err.message || 'OpenAI error' });
-  }
+const MessageSchema = z.object({
+  id: z.string().uuid(),
+  role: z.enum(["system", "user", "assistant"]),
+  content: z.string(),
+  model: z.string().nullable().optional(),
+  finish_reason: z.string().nullable().optional(),
+  usage: z.any().nullable().optional(),
+  created_at: z.string(),
 });
 
-/**
- * 스트리밍(SSE) 채팅
- * req.body = { messages: [...], model?: string }
- * 응답은 SSE로 data: {delta} 를 계속 보냄
- */
-router.post('/stream', async (req, res) => {
-  // SSE 헤더
-  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache, no-transform');
-  res.setHeader('Connection', 'keep-alive');
-  req.socket.setTimeout(0);
+const ConversationSchema = z.object({ id: z.string().uuid() });
 
-  try {
-    const { messages, model = 'gpt-4o-mini' } = req.body || {};
-    if (!Array.isArray(messages) || messages.length === 0) {
-      res.write(`data: ${JSON.stringify({ error: 'messages가 필요합니다.' })}\n\n`);
-      return res.end();
-    }
+const ConversationWithMessagesSchema = z.object({
+  conversation: ConversationSchema,
+  messages: z.array(MessageSchema),
+});
 
-    const stream = await openai.chat.completions.create({
+defineRoute(router, {
+  method: "post",
+  path: "/gpt/chat",
+  docPath: "/api/gpt/chat",
+  summary: "메시지 전송(새 대화 생성 또는 기존에 이어쓰기)",
+  tags: ["GPT"],
+  request: {
+    body: z
+      .object({
+        chat_id: z.string().uuid().optional(),
+        message: z.string().min(1),
+        model: z.string().optional(),
+        temperature: z.number().min(0).max(2).optional(),
+      })
+      .openapi("ChatSendBody", {
+        example: { message: "안녕!", temperature: 0.2 },
+      }),
+  },
+  responses: {
+    200: {
+      description: "ok",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.literal(true),
+            data: ConversationWithMessagesSchema,
+          }),
+        },
+      },
+    },
+    401: { description: "unauthorized" },
+    404: { description: "conversation not found" },
+  },
+  handler: async (ctx, req, res) => {
+    const userId = req.session?.user?.id;
+    if (!userId) throw new UnauthorizedError("로그인이 필요합니다.");
+
+    const { chat_id, message, model, temperature } = ctx.body;
+    const data = await chatAndStore({
+      chatId: chat_id,
+      userId,
+      userMessage: message,
       model,
-      messages,
-      stream: true,
+      temperature,
+      tailForPrompt: 20,
+      limitForReturn: 200,
     });
 
-    for await (const part of stream) {
-      const delta = part.choices?.[0]?.delta?.content || '';
-      if (delta) res.write(`data: ${JSON.stringify({ delta })}\n\n`);
-    }
+    return success(res, data);
+  },
+});
 
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-    res.end();
-  } catch (err) {
-    console.error('[CHAT/STREAM]', err);
-    res.write(`data: ${JSON.stringify({ error: err.message || 'OpenAI error' })}\n\n`);
-    res.end();
-  }
+defineRoute(router, {
+  method: "get",
+  path: "/gpt/messages",
+  docPath: "/api/gpt/messages",
+  summary: "특정 대화 메시지 조회",
+  tags: ["GPT"],
+  request: {
+    query: z
+      .object({
+        chat_id: z.string().uuid(),
+        limit: z
+          .string()
+          .regex(/^\d+$/)
+          .transform((v) => parseInt(v, 10))
+          .optional()
+          .openapi({ example: "200" }),
+      })
+      .openapi("ChatListQuery"),
+  },
+  responses: {
+    200: {
+      description: "ok",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.literal(true),
+            data: ConversationWithMessagesSchema,
+          }),
+        },
+      },
+    },
+    401: { description: "unauthorized" },
+    404: { description: "conversation not found" },
+  },
+  handler: async (ctx, req, res) => {
+    const userId = req.session?.user?.id;
+    if (!userId) throw new UnauthorizedError("로그인이 필요합니다.");
+
+    const { chat_id, limit } = ctx.query;
+    const conv = await ensureConversationOwned({
+      conversationId: chat_id,
+      userId,
+    });
+    const rows = await listMessages({
+      conversationId: conv.id,
+      limit: limit ?? 200,
+    });
+    return success(res, { conversation: { id: conv.id }, messages: rows });
+  },
+});
+
+defineRoute(router, {
+  method: "get",
+  path: "/gpt/conversations",
+  docPath: "/api/gpt/conversations",
+  summary: "내 대화 목록",
+  tags: ["GPT"],
+  responses: {
+    200: {
+      description: "ok",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.literal(true),
+            data: z.array(
+              z.object({
+                id: z.string().uuid(),
+                created_at: z.string(),
+                updated_at: z.string(),
+                last_role: z
+                  .enum(["system", "user", "assistant"])
+                  .nullable()
+                  .optional(),
+                last_content: z.string().nullable().optional(),
+                last_created_at: z.string().nullable().optional(),
+              })
+            ),
+          }),
+        },
+      },
+    },
+    401: { description: "unauthorized" },
+  },
+  handler: async (_ctx, req, res) => {
+    const userId = req.session?.user?.id;
+    if (!userId) throw new UnauthorizedError("로그인이 필요합니다.");
+    const rows = await listMyConversations({ userId, limit: 50 });
+    return success(res, rows);
+  },
 });
 
 module.exports = router;
