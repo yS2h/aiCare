@@ -42,15 +42,15 @@ function Gate() {
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* 최초 진입 분기 */}
+      {/* 최초 진입 */}
       <Route path="/" element={<Gate />} />
 
-      {/* 게스트 전용: 로그인 페이지 */}
+      {/* 게스트: 로그인 페이지 */}
       <Route element={<ProtectedRoute mode="guest" />}>
         <Route path="/login" element={<Login />} />
       </Route>
 
-      {/* 로그인만 필요: 자녀 미등록 사용자도 접근 */}
+      {/* 로그인만 필요요 */}
       <Route element={<ProtectedRoute />}>
         <Route path="/information" element={<Information />} />
       </Route>
