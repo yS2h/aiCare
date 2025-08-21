@@ -22,7 +22,7 @@ export default function GrowthHistory() {
           style={{ height: `calc(100dvh - ${HEADER_H + FOOTER_H}px)` }}
           className="overflow-y-auto scroll-smooth"
         >
-          <div className="mx-auto px-6 pt-2 pb-6 space-y-8">
+          <div className="mx-auto px-6 pt-2 pb-6 space-y-10">
             <Graph />
             <Input currentDate={date} onChangeDate={setDate} />
             <Record />
