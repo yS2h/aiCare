@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav'
 import Button from '../components/Button'
@@ -23,13 +23,26 @@ export default function Information() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const toNum = (v: string) => (v.trim() === '' ? null : Number(v))
+
+  // 이미 등록되어 있으면 홈으로
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await api.get('/me/check', { withCredentials: true })
+        if (!cancelled && res?.data?.data?.has_child === true) {
+          navigate('/home', { replace: true })
+        }
+      } catch {}
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [navigate])
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault?.()
@@ -37,13 +50,11 @@ export default function Information() {
     setError(null)
     setSuccess(null)
 
-    // 필수값 검증
     if (!formData.childName || !formData.gender || !formData.childBirth) {
       setError('아이 이름 / 성별 / 생년월일은 필수입니다.')
       return
     }
 
-    // 서버 페이로드
     const payload = {
       name: formData.childName,
       gender: formData.gender === '남' ? 'male' : 'female',
@@ -54,12 +65,27 @@ export default function Information() {
       mother_height: toNum(formData.motherHeight)
     }
 
+    const confirmChild = async (retries = 6, delayMs = 400) => {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const res = await api.get('/me/check', { withCredentials: true })
+          if (res?.data?.data?.has_child === true) return true
+        } catch {}
+        await new Promise(r => setTimeout(r, delayMs))
+      }
+      return false
+    }
+
     try {
       setLoading(true)
+      await api.post('/children', payload, { withCredentials: true })
 
-      await api.post('/children', payload)
-
-      navigate('/', { replace: true })
+      const ok = await confirmChild()
+      if (ok) {
+        navigate('/home', { replace: true })
+      } else {
+        setSuccess('등록이 완료되었어요. 잠시 후 홈으로 이동해 주세요.')
+      }
     } catch (err: any) {
       setSuccess(null)
       setError(err?.response?.data?.message ?? err?.message ?? '요청 중 오류가 발생했습니다.')
