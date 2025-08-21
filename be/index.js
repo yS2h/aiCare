@@ -34,6 +34,9 @@ app.use(sessionMiddleware);
 const gptRouter = require("./routes/gpt");
 app.use("/api", gptRouter);
 
+const chatRouter = require("./routes/chat");
+app.use("/api", chatRouter);
+
 const authRouter = require("./routes/auth");
 app.use("/api/auth", authRouter);
 
