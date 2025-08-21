@@ -148,6 +148,30 @@ async function init() {
   );
   CREATE INDEX IF NOT EXISTS idx_growth_report_child ON growth_report(child_id);
 
+-- === GPT Chat ===
+CREATE TABLE IF NOT EXISTS conversations (
+  id          uuid PRIMARY KEY,
+  user_id     uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversations_user_updated
+  ON conversations(user_id, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id               uuid PRIMARY KEY,
+  conversation_id  uuid NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  role             text NOT NULL CHECK (role IN ('system','user','assistant')),
+  content          text NOT NULL,
+  model            text,
+  finish_reason    text,
+  usage            jsonb,
+  created_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_messages_conv_created
+  ON messages(conversation_id, created_at ASC);
+
   COMMIT;
   `;
 
