@@ -3,6 +3,7 @@ import { useAuth } from '@/api/auth/AuthContext'
 import BottomNav from '@/components/BottomNav'
 import api from '@/api/instance'
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 type Me = {
   id?: string
@@ -16,6 +17,15 @@ export default function MyPage() {
   const [me, setMe] = useState<Me | null>(null)
   const [meLoading, setMeLoading] = useState(false)
   const [meError, setMeError] = useState<string | null>(null)
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } finally {
+      navigate('/login', { replace: true })
+    }
+  }
 
   useEffect(() => {
     let alive = true
@@ -26,7 +36,7 @@ export default function MyPage() {
         const res = await api.get('/auth/me')
         console.log('[auth/me 응답]', res.data)
         if (!alive) return
-        setMe(res.data?.user ?? null) 
+        setMe(res.data?.user ?? null)
       } catch (e: any) {
         if (!alive) return
         setMeError('프로필 정보를 불러오지 못했습니다.')
@@ -60,7 +70,6 @@ export default function MyPage() {
 
   return (
     <div className="relative min-h-screen">
-
       <div className="absolute inset-0 bg-white" />
       <div className="absolute inset-x-0 top-0 h-[33vh] bg-main" />
 
@@ -70,7 +79,7 @@ export default function MyPage() {
         <main
           className="overflow-y-auto px-6 py-4 text-slate-900"
           style={{
-            paddingBottom: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom) + 48px)`,
+            paddingBottom: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom) + 48px)`
           }}
         >
           <section
@@ -97,23 +106,19 @@ export default function MyPage() {
 
             <p className="mt-3 text-base font-semibold">{displayName}</p>
 
-            {meLoading && (
-              <span className="mt-2 text-xs text-white/70">프로필 불러오는 중…</span>
-            )}
-            {meError && (
-              <span className="mt-2 text-xs text-red-200">{meError}</span>
-            )}
+            {meLoading && <span className="mt-2 text-xs text-white/70">프로필 불러오는 중…</span>}
+            {meError && <span className="mt-2 text-xs text-red-200">{meError}</span>}
           </section>
         </main>
 
         <div
           className="fixed inset-x-4 z-50 flex justify-center"
           style={{
-            bottom: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom) + 24px)`,
+            bottom: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom) + 24px)`
           }}
         >
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="relative left-2 text-xs text-gray1 hover:text-black underline"
             aria-label="로그아웃"
           >
