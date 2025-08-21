@@ -1,84 +1,63 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from '@/api/auth/AuthContext'
 import { useEffect, useState } from 'react'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import api from '@/api/instance'
 
-type Props = { mode?: 'auth' | 'guest' }
+type Props = {
+  mode?: 'auth' | 'guest' // 기본 'auth' = 로그인 필요
+  requireChild?: boolean // true면 /me/check 검사까지
+}
 
-export default function ProtectedRoute({ mode = 'auth' }: Props) {
-  const { user, loading } = useAuth()
+export default function ProtectedRoute({ mode = 'auth', requireChild = false }: Props) {
   const location = useLocation()
-  const isAuthed = !!user?.id
-
-  const [childLoading, setChildLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null)
   const [hasChild, setHasChild] = useState<boolean | null>(null)
 
   useEffect(() => {
     let cancelled = false
-
-    if (mode === 'guest' || !isAuthed) {
-      setHasChild(null)
-      setChildLoading(false)
-      return () => {
-        cancelled = true
-      }
-    }
-
-    const fetchChild = async () => {
-      setChildLoading(true)
+    ;(async () => {
       try {
-        const res = await api.get('/me/check')
-        const exists = !!res?.data?.data?.has_child
-        if (!cancelled) setHasChild(exists)
-      } catch (err: any) {
-        if (!cancelled) {
-          if (err?.response?.status === 401) {
-            setHasChild(null)
-          } else {
-            setHasChild(false)
-          }
-        }
-      } finally {
-        if (!cancelled) setChildLoading(false)
-      }
-    }
+        await api.get('/auth/me', { withCredentials: true })
+        if (cancelled) return
+        setIsAuthed(true)
 
-    fetchChild()
+        if (requireChild) {
+          const res = await api.get('/me/check', { withCredentials: true })
+          if (cancelled) return
+          setHasChild(res?.data?.data?.has_child === true)
+        }
+      } catch {
+        if (!cancelled) setIsAuthed(false)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
     return () => {
       cancelled = true
     }
-  }, [isAuthed, mode])
+  }, [requireChild])
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-main text-white flex items-center justify-center">
-        <span className="text-sm text-white/70">로딩 중…</span>
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="text-sm text-gray-500">확인 중…</span>
       </div>
     )
   }
 
+  // 게스트 전용(로그인 상태면 못 들어옴)
   if (mode === 'guest') {
     return isAuthed ? <Navigate to="/" replace /> : <Outlet />
   }
 
+  // 로그인 필요
   if (!isAuthed) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
-  if (childLoading) {
-    return (
-      <div className="min-h-screen bg-main text-white flex items-center justify-center">
-        <span className="text-sm text-white/70">확인 중…</span>
-      </div>
-    )
-  }
-
-  if (hasChild === false && location.pathname !== '/information') {
+  // 자녀 등록 필요
+  if (requireChild && hasChild === false) {
     return <Navigate to="/information" replace />
-  }
-
-  if (hasChild === true && location.pathname === '/information') {
-    return <Navigate to="/" replace />
   }
 
   return <Outlet />
