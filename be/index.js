@@ -57,6 +57,9 @@ app.use("/api", requireAuth, growthRouter);
 const imagesRouter = require("./routes/images");
 app.use("/api", imagesRouter);
 
+const gptRouter = require("./routes/gpt");
+app.use("/api", gptRouter);
+
 const swaggerUi = require("swagger-ui-express");
 const { getOpenApiDocument } = require("./docs/openapi");
 app.get("/openapi.json", (_, res) => res.json(getOpenApiDocument()));
