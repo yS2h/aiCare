@@ -31,6 +31,9 @@ app.use(express.json());
 app.use(logger);
 app.use(sessionMiddleware);
 
+const gptRouter = require("./routes/gpt");
+app.use("/api", gptRouter);
+
 const authRouter = require("./routes/auth");
 app.use("/api/auth", authRouter);
 
@@ -56,9 +59,6 @@ app.use("/api", requireAuth, growthRouter);
 
 const imagesRouter = require("./routes/images");
 app.use("/api", imagesRouter);
-
-const gptRouter = require("./routes/gpt");
-app.use("/api", gptRouter);
 
 const swaggerUi = require("swagger-ui-express");
 const { getOpenApiDocument } = require("./docs/openapi");
