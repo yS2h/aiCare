@@ -55,6 +55,29 @@ async function createImageRecord({
   return rows[0];
 }
 
+async function listImagesByType({ userId, type, limit = 100 }) {
+  if (!userId) throw new BadRequestError("로그인이 필요합니다.");
+  if (!["xray", "posture"].includes(type))
+    throw new BadRequestError("type은 xray | posture 중 하나여야 합니다.");
+
+  const childId = await findChildIdByUserId(userId);
+
+  const sql = `
+    SELECT id, child_id, type, url, taken_at, uploaded_at, width, height, notes
+    FROM images
+    WHERE child_id = $1 AND type = $2
+    ORDER BY COALESCE(taken_at, uploaded_at) DESC, uploaded_at DESC, id DESC
+    LIMIT $3
+  `;
+  const { rows } = await query(sql, [
+    childId,
+    type,
+    Math.max(1, Math.min(500, limit)),
+  ]);
+  return rows;
+}
+
 module.exports = {
   createImageRecord,
+  listImagesByType,
 };

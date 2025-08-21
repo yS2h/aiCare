@@ -19,6 +19,15 @@ export default function MyPage() {
   const [me, setMe] = useState<Me | null>(null)
   const [meLoading, setMeLoading] = useState(false)
   const [meError, setMeError] = useState<string | null>(null)
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } finally {
+      navigate('/login', { replace: true })
+    }
+  }
 
   useEffect(() => {
     let alive = true
@@ -152,7 +161,7 @@ export default function MyPage() {
           style={{ bottom: `calc(${NAV_HEIGHT_PX}px + env(safe-area-inset-bottom) + 24px)` }}
         >
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="relative left-2 text-xs text-gray1 hover:text-black underline"
             aria-label="로그아웃"
           >

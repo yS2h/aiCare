@@ -1,10 +1,12 @@
-// routes/images.js
 const { Router } = require("express");
 const { z } = require("zod");
 const { defineRoute } = require("../lib/route");
 const { success } = require("../utils/response");
 const { UnauthorizedError } = require("../utils/ApiError");
-const { createImageRecord } = require("../services/imageService");
+const {
+  createImageRecord,
+  listImagesByType,
+} = require("../services/imageService");
 const { extendZodWithOpenApi } = require("@asteasolutions/zod-to-openapi");
 
 extendZodWithOpenApi(z);
@@ -114,6 +116,54 @@ defineRoute(router, {
     });
 
     return success(res, row);
+  },
+});
+
+defineRoute(router, {
+  method: "get",
+  path: "/images",
+  docPath: "/api/images",
+  summary: "이미지 목록 조회",
+  description:
+    "척추 분석 페이지(type: posture), 골연령 분석 페이지(type: xray)",
+  tags: ["Images"],
+  request: {
+    query: z
+      .object({
+        type: ImageTypeSchema.openapi({ example: "posture" }),
+        limit: z
+          .string()
+          .regex(/^\d+$/)
+          .transform((v) => parseInt(v, 10))
+          .optional()
+          .openapi({ example: "50" }),
+      })
+      .openapi("ListImagesQuery"),
+  },
+  responses: {
+    200: {
+      description: "ok",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.literal(true),
+            data: z.array(ImageRecordSchema),
+          }),
+        },
+      },
+    },
+    401: { description: "unauthorized" },
+    404: { description: "child not found" },
+    400: { description: "invalid state (multiple children or bad query)" },
+  },
+  handler: async (ctx, req, res) => {
+    const userId = req.session?.user?.id;
+    if (!userId) throw new UnauthorizedError("로그인이 필요합니다.");
+
+    const { type, limit } = ctx.query;
+    const rows = await listImagesByType({ userId, type, limit });
+
+    return success(res, rows);
   },
 });
 
