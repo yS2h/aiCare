@@ -1,4 +1,3 @@
-// services/imageService.js
 const { query } = require("../providers/db");
 const { v4: uuidv4 } = require("uuid");
 const { NotFoundError, BadRequestError } = require("../utils/ApiError");
@@ -21,34 +20,56 @@ async function findChildIdByUserId(userId) {
   return rows[0].id;
 }
 
+/**
+ * @param {{
+ *  userId: string,
+ *  type: 'xray'|'posture',
+ *  takenAt?: string|null,
+ *  width?: number|null,
+ *  height?: number|null,
+ *  notes?: string|null,
+ *  file: { buffer: Buffer, originalname?: string, mimetype: string, size?: number }
+ * }} params
+ */
 async function createImageRecord({
   userId,
   type,
-  url,
   takenAt,
   width,
   height,
   notes,
+  file,
 }) {
   if (!userId) throw new BadRequestError("로그인이 필요합니다.");
+  if (!file?.buffer || !file?.mimetype) {
+    throw new BadRequestError("업로드 파일이 필요합니다.");
+  }
+  if (!["xray", "posture"].includes(type)) {
+    throw new BadRequestError("type은 xray | posture 중 하나여야 합니다.");
+  }
 
   const childId = await findChildIdByUserId(userId);
   const id = uuidv4();
 
   const sql = `
-    INSERT INTO images (id, child_id, type, url, taken_at, width, height, notes)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING id, child_id, type, url, taken_at, uploaded_at, width, height, notes
+    INSERT INTO images
+      (id, child_id, type, taken_at, uploaded_at, width, height, notes, filename, mime, data, size)
+    VALUES
+      ($1, $2, $3, $4, now(), $5, $6, $7, $8, $9, $10, $11)
+    RETURNING id, child_id, type, taken_at, uploaded_at, width, height, notes, filename, mime, size
   `;
   const params = [
     id,
     childId,
     type,
-    url,
     takenAt ?? null,
     width ?? null,
     height ?? null,
     notes ?? null,
+    file.originalname ?? "upload",
+    file.mimetype,
+    file.buffer, // Buffer → BYTEA
+    file.size ?? file.buffer.length ?? null,
   ];
 
   const { rows } = await query(sql, params);
@@ -63,7 +84,7 @@ async function listImagesByType({ userId, type, limit = 100 }) {
   const childId = await findChildIdByUserId(userId);
 
   const sql = `
-    SELECT id, child_id, type, url, taken_at, uploaded_at, width, height, notes
+    SELECT id, child_id, type, taken_at, uploaded_at, width, height, notes, filename, mime, size
     FROM images
     WHERE child_id = $1 AND type = $2
     ORDER BY COALESCE(taken_at, uploaded_at) DESC, uploaded_at DESC, id DESC
@@ -77,7 +98,24 @@ async function listImagesByType({ userId, type, limit = 100 }) {
   return rows;
 }
 
+async function getImageBinary({ userId, imageId }) {
+  if (!userId) throw new BadRequestError("로그인이 필요합니다.");
+  const childId = await findChildIdByUserId(userId);
+
+  const { rows } = await query(
+    `
+    SELECT id, child_id, mime, size, data, filename
+    FROM images
+    WHERE id = $1 AND child_id = $2
+    `,
+    [imageId, childId]
+  );
+  if (rows.length === 0) throw new NotFoundError("이미지를 찾을 수 없습니다.");
+  return rows[0];
+}
+
 module.exports = {
   createImageRecord,
   listImagesByType,
+  getImageBinary,
 };
