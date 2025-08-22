@@ -1,7 +1,7 @@
-// src/pages/growth-history/Graph.tsx
+// src/pages/GrowthHistory/Graph.tsx
 import * as React from 'react'
-import api from '@/api/instance'
 import dayjs from 'dayjs'
+import api from '@/api/instance'
 
 type GrowthRecord = {
   id: string
@@ -17,11 +17,56 @@ type GrowthRecord = {
 
 type Metric = 'height' | 'weight'
 
-export default function Graph() {
+type GraphProps = {
+  data?: GrowthRecord[]
+  compact?: boolean
+  fixedMetric?: Metric
+  title?: string
+  hideToggle?: boolean
+}
+
+export default function Graph({
+  data,
+  compact = false,
+  fixedMetric,
+  title,
+  hideToggle = false,
+}: GraphProps) {
   const [raw, setRaw] = React.useState<GrowthRecord[]>([])
-  const [metric, setMetric] = React.useState<Metric>('height')
+  const [metric, setMetric] = React.useState<Metric>(fixedMetric ?? 'height')
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (fixedMetric) setMetric(fixedMetric)
+  }, [fixedMetric])
+
+  React.useEffect(() => {
+    if (data && Array.isArray(data)) setRaw(data)
+  }, [data])
+
+  React.useEffect(() => {
+    if (data && Array.isArray(data)) return
+    let mounted = true
+    ;(async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const res = await api.get('/growth')
+        const payload = Array.isArray(res.data) ? res.data : res.data?.data
+        if (mounted) setRaw(payload ?? [])
+      } catch (e) {
+        console.error(e)
+        if (mounted) setError('성장 이력을 불러오지 못했습니다.')
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    })()
+    return () => {
+      mounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const wrapRef = React.useRef<HTMLDivElement>(null)
   const [w, setW] = React.useState(0)
@@ -34,24 +79,6 @@ export default function Graph() {
     return () => ro.disconnect()
   }, [])
 
-  // 성장이력 가져오기
-  React.useEffect(() => {
-    const fetchList = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const res = await api.get<{ success: true; data: GrowthRecord[] }>('/growth')
-        setRaw(res.data?.data ?? [])
-      } catch (e: any) {
-        setError('성장 이력을 불러오지 못했습니다.')
-        console.error(e)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchList()
-  }, [])
-
   const points = React.useMemo(() => {
     const sorted = [...(raw ?? [])].sort(
       (a, b) => dayjs(a.recorded_at).valueOf() - dayjs(b.recorded_at).valueOf()
@@ -59,7 +86,7 @@ export default function Graph() {
     return sorted
       .map(r => ({
         label: dayjs(r.recorded_at).format('MM.DD'),
-        value: metric === 'height' ? r.height_cm : r.weight_kg
+        value: metric === 'height' ? r.height_cm : r.weight_kg,
       }))
       .filter(p => Number.isFinite(p.value))
   }, [raw, metric])
@@ -68,15 +95,14 @@ export default function Graph() {
     if (points.length < 2) return []
     const last = points[points.length - 1].value
     const prev = points[points.length - 2].value
-    const slope = (last - prev) * 0.8 // 살짝 완만하게
+    const slope = (last - prev) * 0.8
     return [last + slope, last + 2 * slope]
   }, [points])
 
-  const height = 220
-  const padding = { top: 18, right: 16, bottom: 26, left: 36 }
+  const height = compact ? 220 : 260
+  const padding = { top: 18, right: 16, bottom: 18, left: 36 } // X축 라벨 제거 → bottom 살짝 줄임
   const innerW = Math.max(0, (w || 600) - padding.left - padding.right)
   const innerH = Math.max(0, height - padding.top - padding.bottom)
-
   const xInset = 12
   const plotW = Math.max(0, innerW - xInset * 2)
 
@@ -86,9 +112,12 @@ export default function Graph() {
   const pad = (vMax - vMin) * 0.2 || 1
   const yMin = Math.max(0, Math.floor(vMin - pad))
   const yMax = Math.ceil(vMax + pad)
-  const y = (v: number) => padding.top + innerH * (1 - (v - yMin) / Math.max(1, yMax - yMin))
+
+  const y = (v: number) =>
+    padding.top + innerH * (1 - (v - yMin) / Math.max(1, yMax - yMin))
   const x = (i: number, total: number) =>
     padding.left + xInset + (total <= 1 ? plotW / 2 : (plotW * i) / (total - 1))
+
   const solidPath = React.useMemo(() => {
     if (points.length === 0) return ''
     const total = points.length + futureValues.length
@@ -110,7 +139,7 @@ export default function Graph() {
 
   const lastPoint = points[points.length - 1]
   const unit = metric === 'height' ? 'cm' : 'kg'
-  const title = metric === 'height' ? '키' : '몸무게'
+  const titleText = title ?? '성장이력 그래프'
 
   const ticks = React.useMemo(() => {
     const n = 5
@@ -124,36 +153,40 @@ export default function Graph() {
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
-        <div className="text-[15px] font-semibold">성장이력 그래프</div>
-        <div className="flex gap-1">
-          <button
-            className={
-              'h-7 px-3 text-[12px] rounded-md border ' +
-              (metric === 'height'
-                ? 'bg-black text-white border-black'
-                : 'bg-white text-gray-700 border-gray-300')
-            }
-            onClick={() => setMetric('height')}
-          >
-            키 (cm)
-          </button>
-          <button
-            className={
-              'h-7 px-3 text-[12px] rounded-md border ' +
-              (metric === 'weight'
-                ? 'bg-black text-white border-black'
-                : 'bg-white text-gray-700 border-gray-300')
-            }
-            onClick={() => setMetric('weight')}
-          >
-            몸무게 (kg)
-          </button>
-        </div>
+        <div className="text-[15px] font-semibold">{titleText}</div>
+
+        {!fixedMetric && !hideToggle && (
+          <div className="flex gap-1">
+            <button
+              className={
+                'h-7 px-3 text-[12px] rounded-md border ' +
+                (metric === 'height'
+                  ? 'bg-black text-white border-black'
+                  : 'bg-white text-gray-700 border-gray-300')
+              }
+              onClick={() => setMetric('height')}
+            >
+              키 (cm)
+            </button>
+            <button
+              className={
+                'h-7 px-3 text-[12px] rounded-md border ' +
+                (metric === 'weight'
+                  ? 'bg-black text-white border-black'
+                  : 'bg-white text-gray-700 border-gray-300')
+              }
+              onClick={() => setMetric('weight')}
+            >
+              몸무게 (kg)
+            </button>
+          </div>
+        )}
       </div>
 
       <div
         ref={wrapRef}
-        className="h-60 rounded-2xl border border-slate-200 bg-white shadow-sm px-3 py-2"
+        className="rounded-2xl border border-slate-200 bg-white px-3 py-2"
+        style={{ height }}
       >
         {loading ? (
           <div className="h-full grid place-items-center text-sm text-slate-500">불러오는 중…</div>
@@ -209,18 +242,7 @@ export default function Graph() {
               />
             )}
 
-            {points.map((p, i) => (
-              <text
-                key={i}
-                x={x(i, points.length + futureValues.length)}
-                y={height - 6}
-                fontSize="10"
-                fill="#6B7280"
-                textAnchor="middle"
-              >
-                {p.label}
-              </text>
-            ))}
+            {/* ⛔ X축 날짜 라벨은 출력하지 않음 */}
           </svg>
         )}
       </div>
@@ -228,9 +250,7 @@ export default function Graph() {
       <div className="flex items-center gap-3 text-xs text-slate-600">
         <div className="flex items-center gap-1">
           <span className="inline-block h-[3px] w-6 mx-1 bg-slate-900 rounded" />
-          <span>
-            실측 {title} ({unit})
-          </span>
+          <span>실측 {metric === 'height' ? '키' : '몸무게'} ({unit})</span>
         </div>
         <div className="flex items-center gap-1">
           <span
