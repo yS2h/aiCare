@@ -3,7 +3,7 @@ import React from 'react';
 export type Side = 'left' | 'right';
 
 interface ChatBubbleProps {
-  side?: Side;       // 'left' = 상대, 'right' = 나
+  side?: Side;
   text: string;
   className?: string;
   bubbleClassName?: string;
@@ -16,22 +16,34 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   bubbleClassName = '',
 }) => {
   const isRight = side === 'right';
+  const bubbleColor = isRight ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900';
+  const tailColor   = isRight ? 'bg-gray-900' : 'bg-gray-100';
 
   return (
     <div className={`w-full flex ${isRight ? 'justify-end' : 'justify-start'} ${className}`}>
       <div
         className={[
-          'relative px-3 py-2 text-sm rounded-2xl max-w-[78%] break-words whitespace-pre-wrap shadow-sm',
-          isRight ? 'bg-gray-900 text-white rounded-tr-sm' : 'bg-gray-100 text-gray-900 rounded-tl-sm',
-          // 꼬리
-          "after:content-[''] after:absolute after:top-3 after:w-0 after:h-0",
-          isRight
-            ? 'after:-right-2 after:border-t-transparent after:border-b-transparent after:border-l-gray-900 after:border-l-[10px] after:border-t-[8px] after:border-b-[8px]'
-            : 'after:-left-2  after:border-t-transparent after:border-b-transparent after:border-r-gray-100 after:border-r-[10px] after:border-t-[8px] after:border-b-[8px]',
+          'relative max-w-[76%]',          
+          'px-3 py-2',                      
+          'text-[15px] leading-5',          
+          'rounded-xl',                     
+          'break-words whitespace-pre-wrap',
+          'shadow-none',                    
+          bubbleColor,
           bubbleClassName,
         ].join(' ')}
       >
         {text}
+
+        <span
+          className={[
+            'absolute block rotate-45 rounded-[2px]',
+            'w-2.5 h-2.5',                   
+            tailColor,
+            isRight ? 'right-[-5px]' : 'left-[-5px]',
+            'top-1/2 -translate-y-1/2',
+          ].join(' ')}
+        />
       </div>
     </div>
   );
