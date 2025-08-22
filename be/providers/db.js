@@ -84,6 +84,24 @@ async function init() {
   CREATE INDEX IF NOT EXISTS idx_images_child ON images(child_id);
   CREATE INDEX IF NOT EXISTS idx_images_child_type ON images(child_id, type);
 
+  -- 이미지 등록 방식 교체에 따라 스키마도 수정
+ALTER TABLE images
+  ADD COLUMN IF NOT EXISTS filename text,
+  ADD COLUMN IF NOT EXISTS mime     text,
+  ADD COLUMN IF NOT EXISTS data     bytea,
+  ADD COLUMN IF NOT EXISTS size     integer;
+
+ALTER TABLE images DROP COLUMN IF EXISTS url;
+
+ALTER TABLE images
+  ALTER COLUMN filename SET NOT NULL,
+  ALTER COLUMN mime     SET NOT NULL,
+  ALTER COLUMN data     SET NOT NULL,
+  ALTER COLUMN size     SET NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_images_child_type_taken
+  ON images(child_id, type, COALESCE(taken_at, uploaded_at) DESC);
+
   -- growth_record 
   CREATE TABLE IF NOT EXISTS growth_record (
     id          uuid PRIMARY KEY,
