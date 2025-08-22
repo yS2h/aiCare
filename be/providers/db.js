@@ -20,6 +20,11 @@ const pool = new Pool({
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 10_000,
+
+  connectionTimeoutMillis: Number(
+    process.env.PG_CONNECTION_TIMEOUT_MS || 20000
+  ),
+  query_timeout: Number(process.env.PG_QUERY_TIMEOUT_MS || 0),
 });
 
 pool.on("connect", (client) => {

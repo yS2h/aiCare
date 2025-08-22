@@ -125,8 +125,10 @@ app.use((err, req, res, next) => {
     }
   }
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
+  server.requestTimeout = 0;
+  if (server.setTimeout) server.setTimeout(5 * 60 * 1000);
 })();
 module.exports = app;
