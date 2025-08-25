@@ -121,7 +121,6 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
 
   const gridDays = React.useMemo(() => {
     const start = viewMonth.startOf('month')
-    const end = viewMonth.endOf('month')
     const gridStart = start.startOf('week')
     return Array.from({ length: 42 }, (_, i) => {
       const d = gridStart.add(i, 'day')
