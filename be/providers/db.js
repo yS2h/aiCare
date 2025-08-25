@@ -111,6 +111,20 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE INDEX IF NOT EXISTS idx_messages_conv_created
   ON messages(conversation_id, created_at ASC);
 
+CREATE TABLE IF NOT EXISTS bone_info (
+  id UUID PRIMARY KEY,
+  child_id UUID NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  bone_age VARCHAR(64) NOT NULL, 
+  image_url TEXT NOT NULL,
+  notes TEXT,
+  recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_bone_info_child_recorded
+  ON bone_info (child_id, recorded_at DESC);
+
   COMMIT;
   `;
 
