@@ -46,6 +46,9 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
       setNote('')
       setHeight('')
       setWeight('')
+
+      window.dispatchEvent(new CustomEvent('growth:updated'))
+
       alert('저장 완료')
     } catch (e) {
       console.error(e)
@@ -136,7 +139,6 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
 
   return (
     <section className="space-y-3">
-      {/* 헤더 */}
       <div className="flex items-center justify-between relative">
         <div className="text-[15px] font-semibold">성장 정보 등록</div>
 
@@ -166,7 +168,6 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
           </svg>
         </button>
 
-        {/* 달력 팝오버 */}
         {open && (
           <div
             ref={popoverRef}
@@ -174,7 +175,6 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
             aria-label="날짜 선택 달력"
             className="absolute right-0 top-8 z-50 w-[18rem] rounded-xl border border-gray3 bg-white shadow-lg p-3"
           >
-            {/* 월 변경 */}
             <div className="flex items-center justify-between mb-2">
               <button
                 type="button"
@@ -195,7 +195,6 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
               </button>
             </div>
 
-            {/* 요일 헤더 */}
             <div className="grid grid-cols-7 text-[11px] text-gray-500 mb-1">
               {weekDays.map(w => (
                 <div key={w} className="text-center py-1 tracking-wide">
@@ -204,7 +203,6 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
               ))}
             </div>
 
-            {/* 날짜 그리드 */}
             <div className="grid grid-cols-7 gap-1">
               {gridDays.map(({ d, isCurrentMonth, isToday, isSelected }) => {
                 const base =
@@ -231,7 +229,6 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
               })}
             </div>
 
-            {/* 오늘로 이동 */}
             <div className="mt-2 flex justify-end">
               <button
                 type="button"
@@ -245,7 +242,6 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
         )}
       </div>
 
-      {/* 요일 선택 */}
       <div className="-mx-2 px-2 overflow-x-auto no-scrollbar" ref={stripRef}>
         <div className="flex gap-2 min-w-max">
           {days.map((d, i) => {
@@ -272,7 +268,6 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
         </div>
       </div>
 
-      {/* 입력 폼 */}
       <div className="grid grid-cols-2 gap-3">
         <input
           type="number"
