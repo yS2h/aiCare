@@ -85,7 +85,30 @@ async function listGrowthRecords({ userId }) {
   return rows;
 }
 
+async function deleteGrowthRecord({ userId, recordId }) {
+  if (!userId) throw new BadRequestError("로그인이 필요합니다.");
+  if (!recordId) throw new BadRequestError("삭제할 성장 이력 id가 없습니다.");
+
+  const childId = await findChildIdByUserId(userId);
+
+  const { rows } = await query(
+    `
+    DELETE FROM growth_record
+    WHERE id = $1 AND child_id = $2
+    RETURNING *;
+    `,
+    [recordId, childId]
+  );
+
+  if (rows.length === 0) {
+    throw new NotFoundError("삭제할 성장 이력을 찾을 수 없습니다.");
+  }
+
+  return rows[0];
+}
+
 module.exports = {
   upsertGrowthRecord,
   listGrowthRecords,
+  deleteGrowthRecord,
 };
