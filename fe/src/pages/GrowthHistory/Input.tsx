@@ -290,7 +290,7 @@ export default function Input({ currentDate, onChangeDate }: InputProps) {
       <div className="grid gap-3">
         <textarea
           rows={3}
-          placeholder="특이사항"
+          placeholder="특이사항(오늘 무엇을 먹었는지같은 사소한 이야기를 적어주세요:)"
           value={note}
           onChange={e => setNote(e.target.value)}
           className="w-full rounded-[10px] border border-gray3 px-4 py-3 text-[15px] placeholder:text-gray2 focus:outline-none focus:ring-1 focus:ring-gray3"

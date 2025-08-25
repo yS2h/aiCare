@@ -165,7 +165,7 @@ export default function Record() {
                     <td className="px-3 py-2 text-[13px] text-slate-600 whitespace-normal break-words text-left">
                       {r.note || '-'}
                     </td>
-                    <td className="px-3 py-2 text-center">
+                    <td className="px-2 py-2 text-center">
                       <button
                         type="button"
                         onClick={() => handleDelete(r.id)}
