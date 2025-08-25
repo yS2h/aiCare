@@ -1,4 +1,3 @@
-// src/pages/GrowthHistory/Graph.tsx
 import * as React from 'react'
 import dayjs from 'dayjs'
 import api from '@/api/instance'
@@ -23,6 +22,7 @@ type GraphProps = {
   fixedMetric?: Metric
   title?: string
   hideToggle?: boolean
+  titleClassName?: string  
 }
 
 export default function Graph({
@@ -31,6 +31,7 @@ export default function Graph({
   fixedMetric,
   title,
   hideToggle = false,
+  titleClassName,           
 }: GraphProps) {
   const [raw, setRaw] = React.useState<GrowthRecord[]>([])
   const [metric, setMetric] = React.useState<Metric>(fixedMetric ?? 'height')
@@ -65,7 +66,6 @@ export default function Graph({
     return () => {
       mounted = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const wrapRef = React.useRef<HTMLDivElement>(null)
@@ -100,7 +100,7 @@ export default function Graph({
   }, [points])
 
   const height = compact ? 220 : 260
-  const padding = { top: 18, right: 16, bottom: 18, left: 36 } // X축 라벨 제거 → bottom 살짝 줄임
+  const padding = { top: 18, right: 16, bottom: 18, left: 36 }
   const innerW = Math.max(0, (w || 600) - padding.left - padding.right)
   const innerH = Math.max(0, height - padding.top - padding.bottom)
   const xInset = 12
@@ -153,7 +153,9 @@ export default function Graph({
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
-        <div className="text-[15px] font-semibold">{titleText}</div>
+        <div className={`text-[15px] font-semibold ${titleClassName ?? 'text-slate-900'}`}>
+          {titleText}
+        </div>
 
         {!fixedMetric && !hideToggle && (
           <div className="flex gap-1">
@@ -241,13 +243,11 @@ export default function Graph({
                 strokeDasharray="4 4"
               />
             )}
-
-            {/* ⛔ X축 날짜 라벨은 출력하지 않음 */}
           </svg>
         )}
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-slate-600">
+      <div className="mt-4 flex items-center gap-3 text-xs text-slate-600">
         <div className="flex items-center gap-1">
           <span className="inline-block h-[3px] w-6 mx-1 bg-slate-900 rounded" />
           <span>실측 {metric === 'height' ? '키' : '몸무게'} ({unit})</span>
