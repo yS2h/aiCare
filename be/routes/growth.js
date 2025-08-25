@@ -5,6 +5,7 @@ const { success } = require("../utils/response");
 const {
   upsertGrowthRecord,
   listGrowthRecords,
+  deleteGrowthRecord,
 } = require("../services/growthRecordService");
 const { UnauthorizedError } = require("../utils/ApiError");
 const { extendZodWithOpenApi } = require("@asteasolutions/zod-to-openapi");
@@ -26,6 +27,12 @@ const GrowthRecordSchema = z
     updated_at: z.string(),
   })
   .openapi("GrowthRecord");
+
+const GrowthRecordIdParams = z
+  .object({
+    id: z.string().uuid(),
+  })
+  .openapi("GrowthRecordIdParams");
 
 const BodySchema = z
   .object({
@@ -131,6 +138,41 @@ defineRoute(router, {
 
     const rows = await listGrowthRecords({ userId });
     return success(res, rows);
+  },
+});
+
+defineRoute(router, {
+  method: "delete",
+  path: "/growth/:id",
+  docPath: "/api/growth/{id}",
+  summary: "성장 이력 삭제",
+  tags: ["Growth"],
+  request: {
+    params: GrowthRecordIdParams,
+  },
+  responses: {
+    200: {
+      description: "ok",
+      content: {
+        "application/json": {
+          schema: z.object({
+            success: z.literal(true),
+            data: GrowthRecordSchema,
+          }),
+        },
+      },
+    },
+    401: { description: "unauthorized" },
+    404: { description: "record not found" },
+    400: { description: "invalid state (multiple children)" },
+  },
+  handler: async (ctx, req, res) => {
+    const userId = req.session?.user?.id;
+    if (!userId) throw new UnauthorizedError("로그인이 필요합니다.");
+
+    const { id } = ctx.params;
+    const deleted = await deleteGrowthRecord({ userId, recordId: id });
+    return success(res, deleted);
   },
 });
 
