@@ -1,3 +1,4 @@
+// src/pages/GrowthHistory/Graph.tsx
 import * as React from 'react'
 import dayjs from 'dayjs'
 import api from '@/api/instance'
@@ -22,7 +23,7 @@ type GraphProps = {
   fixedMetric?: Metric
   title?: string
   hideToggle?: boolean
-  titleClassName?: string  
+  titleClassName?: string
 }
 
 export default function Graph({
@@ -31,7 +32,7 @@ export default function Graph({
   fixedMetric,
   title,
   hideToggle = false,
-  titleClassName,           
+  titleClassName,
 }: GraphProps) {
   const [raw, setRaw] = React.useState<GrowthRecord[]>([])
   const [metric, setMetric] = React.useState<Metric>(fixedMetric ?? 'height')
@@ -159,23 +160,26 @@ export default function Graph({
 
         {!fixedMetric && !hideToggle && (
           <div className="flex gap-1">
+            {/* 키 버튼 */}
             <button
               className={
                 'h-7 px-3 text-[12px] rounded-md border ' +
                 (metric === 'height'
-                  ? 'bg-black text-white border-black'
-                  : 'bg-white text-gray-700 border-gray-300')
+                  ? 'bg-white text-black border-black'   // 선택됨: 흰 배경 + 검정 글씨
+                  : 'bg-black text-white border-black')   // 미선택: 검정 배경 + 흰 글씨
               }
               onClick={() => setMetric('height')}
             >
               키 (cm)
             </button>
+
+            {/* 몸무게 버튼 */}
             <button
               className={
                 'h-7 px-3 text-[12px] rounded-md border ' +
                 (metric === 'weight'
-                  ? 'bg-black text-white border-black'
-                  : 'bg-white text-gray-700 border-gray-300')
+                  ? 'bg-white text-black border-black'   // 선택됨
+                  : 'bg-black text-white border-black')   // 미선택
               }
               onClick={() => setMetric('weight')}
             >
