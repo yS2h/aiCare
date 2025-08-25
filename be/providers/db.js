@@ -19,10 +19,8 @@ const pool = new Pool({
       : false,
   max: 10,
   idleTimeoutMillis: 30_000,
-  connectionTimeoutMillis: 10_000,
-
   connectionTimeoutMillis: Number(
-    process.env.PG_CONNECTION_TIMEOUT_MS || 20000
+    process.env.PG_CONNECTION_TIMEOUT_MS || 20_000
   ),
   query_timeout: Number(process.env.PG_QUERY_TIMEOUT_MS || 0),
 });
@@ -88,7 +86,6 @@ async function init() {
     UNIQUE (child_id, recorded_at)
   );
   CREATE INDEX IF NOT EXISTS idx_growth_record_child_date ON growth_record(child_id, recorded_at);
-d);
 
 -- === GPT Chat ===
 CREATE TABLE IF NOT EXISTS conversations (
