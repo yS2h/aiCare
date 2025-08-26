@@ -458,10 +458,6 @@ const ReportSheet = React.forwardRef<
           </div>
         </div>
       </div>
-
-      <div className="mt-4 rounded-lg bg-gray-50 p-3 text-[11px] text-gray-600">
-        본 리포트는 입력된 정보와 성장 기록, AI 분석 결과를 바탕으로 자동 생성되며 의료적 진단을 대체하지 않습니다.
-      </div>
     </div>
   )
 })
