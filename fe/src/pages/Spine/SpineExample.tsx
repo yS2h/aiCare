@@ -59,7 +59,7 @@ export default function SpineExample() {
         style={{ height: `calc(100dvh - ${HEADER_H + FOOTER_H}px)` }}
         className="overflow-y-auto overflow-x-hidden"
       >
-        <div className="mx-auto max-w-[920px] px-6 py-4">
+        <div className="mx-auto max-w-[920px] px-6 pt-2 pb-4">
           <section className="rounded-2xl border border-gray-200 p-4 md:p-5">
             <div className="flex items-center gap-2">
               <span className="h-4 w-1.5 rounded-full bg-indigo-500" />
