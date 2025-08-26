@@ -158,7 +158,9 @@ function useGrowth(): { data: GrowthPoint[]; loading: boolean } {
 }
 
 export default function Guide() {
-  const NAV_H = 84
+  const HEADER_H = 64
+  const FOOTER_H = 84
+
   const { data: user } = useUserInfo()
   const { data: growth } = useGrowth()
 
@@ -174,7 +176,6 @@ export default function Guide() {
     const filename = `aicare-report-${user?.name ?? 'user'}-${latest?.date ?? ''}.pdf`
 
     await wait(120)
-
     el.classList.add('print-fill')
 
     try {
@@ -189,11 +190,9 @@ export default function Guide() {
       })
 
       const img = canvas.toDataURL('image/png')
-
       const pdf = new jsPDF('p', 'mm', 'a4')
-      const pageW = pdf.internal.pageSize.getWidth() // 210
-      const pageH = pdf.internal.pageSize.getHeight() // 297
-
+      const pageW = pdf.internal.pageSize.getWidth()
+      const pageH = pdf.internal.pageSize.getHeight()
       const s = Math.max(pageW / canvas.width, pageH / canvas.height)
       const w = canvas.width * s
       const h = canvas.height * s
@@ -233,22 +232,28 @@ export default function Guide() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col relative">
+    <div className="min-h-screen bg-white flex flex-col relative overflow-x-hidden">
+      {/* 상단바 */}
       <TopBar title="종합 성장 가이드" variant="light" />
 
-      <main className="flex-1 flex justify-center px-6 pt-2 py-4">
-        <ReportSheet ref={sheetRef} user={user} growth={growth} bmi={bmi} />
+      {/* 스크롤 영역 */}
+      <main
+        style={{ height: `calc(100dvh - ${HEADER_H + FOOTER_H}px)` }}
+        className="overflow-y-auto overflow-x-hidden scroll-smooth flex justify-center px-6 pt-2 pb-4"
+      >
+        <div className="w-full max-w-[820px]">
+          <ReportSheet ref={sheetRef} user={user} growth={growth} bmi={bmi} />
+          <div className="mt-4">
+            <Button
+              label="PDF 저장하기"
+              onClick={downloadPDF}
+              style={{ maxWidth: 'none', borderRadius: 12 }}
+            />
+          </div>
+        </div>
       </main>
 
-      <div className="px-6 pb-3">
-        <Button
-          label="PDF 저장하기"
-          onClick={downloadPDF}
-          style={{ maxWidth: 'none', borderRadius: 12 }}
-        />
-      </div>
-
-      <div style={{ height: NAV_H }} />
+      {/* 하단바 */}
       <BottomNav activePage="/guide" />
     </div>
   )
@@ -292,7 +297,7 @@ const ReportSheet = React.forwardRef<
       id="report-sheet"
       className="bg-white rounded-xl border border-gray-200 shadow-sm"
       style={{
-        width: A4_WIDTH,
+        width: '100%',
         minHeight: A4_HEIGHT,
         padding: 24,
         boxSizing: 'border-box'
@@ -357,7 +362,7 @@ const ReportSheet = React.forwardRef<
       </div>
 
       <div className="mt-5 text-[12px] text-gray-500">
-        본 리포트는 정보 입력(information) 및 성장관리 기록을 바탕으로 산출된 참고 지표입니다.
+        본 가이드는 정보 입력 및 성장 관리 기록을 바탕으로 산출된 지표입니다.
       </div>
     </div>
   )
