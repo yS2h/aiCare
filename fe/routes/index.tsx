@@ -5,13 +5,14 @@ import Home from '@/pages/Home'
 import MyPage from '@/pages/MyPage'
 import Login from '@/pages/Login'
 import GrowthHistory from '@/pages/GrowthHistory/GrowthHistory'
-import BoneAge from '@/pages/BoneAge'
+import BoneAge from '@/pages/BoneAge/BoneAge'
 import Spine from '@/pages/Spine/Spine'
 import Guide from '@/pages/Guide'
 import Consulting from '@/pages/Consulting'
 import Information from '@/pages/Information'
 import ProtectedRoute from './ProtectedRoute'
 import SpineExample from '@/pages/Spine/SpineExample'
+import BoneAgeExample from '@/pages/BoneAge/BoneAgeExample'
 
 function Gate() {
   const navigate = useNavigate()
@@ -66,6 +67,7 @@ export default function AppRoutes() {
         <Route path="/guide" element={<Guide />} />
         <Route path="/consulting" element={<Consulting />} />
         <Route path="/spine/example/:id" element={<SpineExample />} />
+        <Route path="/bone-age/example/:id" element={<BoneAgeExample />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
