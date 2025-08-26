@@ -62,7 +62,7 @@ export default function SpineExample() {
         <div className="mx-auto max-w-[920px] px-6 pt-2 pb-4">
           <section className="rounded-2xl border border-gray-200 p-4 md:p-5">
             <div className="flex items-center gap-2">
-              <span className="h-4 w-1.5 rounded-full bg-indigo-500" />
+              <span className="h-4 w-1.5 rounded-full bg-main" />
               <h2 className="text-[15px] md:text-[16px] font-semibold text-gray-900">
                 Cobb&apos;s angle 분석 결과
               </h2>
