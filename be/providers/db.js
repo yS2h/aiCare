@@ -125,6 +125,21 @@ CREATE TABLE IF NOT EXISTS bone_info (
 CREATE INDEX IF NOT EXISTS idx_bone_info_child_recorded
   ON bone_info (child_id, recorded_at DESC);
 
+CREATE TABLE IF NOT EXISTS spine_info (
+  id UUID PRIMARY KEY,
+  child_id UUID NOT NULL REFERENCES children(id) ON DELETE CASCADE,
+  image_url TEXT NOT NULL,
+  measurements JSONB NOT NULL, -- [{angle: number, apex: string, direction: "좌측"|"우측"}, ...] 길이 3
+  notes TEXT,
+  recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT spine_info_meas_len CHECK (jsonb_typeof(measurements) = 'array' AND jsonb_array_length(measurements) = 3)
+);
+
+CREATE INDEX IF NOT EXISTS idx_spine_info_child_recorded
+  ON spine_info (child_id, recorded_at DESC);
+
   COMMIT;
   `;
 
