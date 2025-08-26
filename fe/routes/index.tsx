@@ -6,11 +6,12 @@ import MyPage from '@/pages/MyPage'
 import Login from '@/pages/Login'
 import GrowthHistory from '@/pages/GrowthHistory/GrowthHistory'
 import BoneAge from '@/pages/BoneAge'
-import Spine from '@/pages/Spine'
+import Spine from '@/pages/Spine/Spine'
 import Guide from '@/pages/Guide'
 import Consulting from '@/pages/Consulting'
 import Information from '@/pages/Information'
 import ProtectedRoute from './ProtectedRoute'
+import SpineExample from '@/pages/Spine/SpineExample'
 
 function Gate() {
   const navigate = useNavigate()
@@ -50,7 +51,7 @@ export default function AppRoutes() {
         <Route path="/login" element={<Login />} />
       </Route>
 
-      {/* 로그인만 필요요 */}
+      {/* 로그인만 필요 */}
       <Route element={<ProtectedRoute />}>
         <Route path="/information" element={<Information />} />
       </Route>
@@ -64,6 +65,7 @@ export default function AppRoutes() {
         <Route path="/spine" element={<Spine />} />
         <Route path="/guide" element={<Guide />} />
         <Route path="/consulting" element={<Consulting />} />
+        <Route path="/spine/example/:id" element={<SpineExample />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
