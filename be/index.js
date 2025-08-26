@@ -63,6 +63,9 @@ app.use("/api", requireAuth, growthRouter);
 const boneInfoRouter = require("./routes/boneInfo");
 app.use("/api", boneInfoRouter);
 
+const spineInfoRouter = require("./routes/spineInfo");
+app.use("/api", spineInfoRouter);
+
 const swaggerUi = require("swagger-ui-express");
 const { getOpenApiDocument } = require("./docs/openapi");
 app.get("/openapi.json", (_, res) => res.json(getOpenApiDocument()));
