@@ -16,9 +16,19 @@ type UserInfo = {
 }
 
 export type GrowthPoint = {
-  date: string // YYYY-MM-DD
-  height: number // cm
-  weight: number // kg
+  date: string
+  height: number
+  weight: number
+}
+
+type Analysis = {
+  boneAgeYears?: number
+  boneAgeStd?: number
+  phvNote?: string
+  postureType?: string
+  scoliosisRisk?: string
+  scoliosisMainCobb?: number
+  notes?: string
 }
 
 const pickNum = (o: any, ks: string[]) =>
@@ -61,11 +71,30 @@ function loadInfoFromStorage(): Partial<UserInfo> {
       const age = pickNum(j, ['age'])
       const birthDate = pickStr(j, ['birthDate', 'birth', 'birthday'])
       return { name, sex, age, birthDate }
-    } catch {
-      /* ignore */
-    }
+    } catch {}
   }
   return {}
+}
+
+function loadAnalysisFromStorage(): Analysis {
+  try {
+    const raw =
+      localStorage.getItem('aicare_analysis') ||
+      localStorage.getItem('bone_posture_analysis')
+    if (!raw) return {}
+    const j = JSON.parse(raw)
+    return {
+      boneAgeYears: pickNum(j, ['boneAgeYears', 'bone_age_years']),
+      boneAgeStd: pickNum(j, ['boneAgeStd', 'bone_age_std']),
+      phvNote: pickStr(j, ['phvNote', 'phv_note', 'phv']),
+      postureType: pickStr(j, ['postureType', 'posture']),
+      scoliosisRisk: pickStr(j, ['scoliosisRisk', 'scoliosis', 'risk']),
+      scoliosisMainCobb: pickNum(j, ['scoliosisMainCobb', 'cobb_main']),
+      notes: pickStr(j, ['notes', 'summary'])
+    }
+  } catch {
+    return {}
+  }
 }
 
 function useUserInfo(): { data: UserInfo | null; loading: boolean } {
@@ -167,6 +196,7 @@ export default function Guide() {
   const latest = growth.length ? growth[growth.length - 1] : null
   const bmi = latest ? calcBMI(latest.weight, latest.height) : undefined
 
+  const analysis = useMemo(() => loadAnalysisFromStorage(), [])
   const sheetRef = useRef<HTMLDivElement>(null)
 
   const downloadPDF = async () => {
@@ -193,7 +223,7 @@ export default function Guide() {
       const pdf = new jsPDF('p', 'mm', 'a4')
       const pageW = pdf.internal.pageSize.getWidth()
       const pageH = pdf.internal.pageSize.getHeight()
-      const s = Math.max(pageW / canvas.width, pageH / canvas.height)
+      const s = Math.min(pageW / canvas.width, pageH / canvas.height)
       const w = canvas.width * s
       const h = canvas.height * s
       const x = (pageW - w) / 2
@@ -233,17 +263,21 @@ export default function Guide() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col relative overflow-x-hidden">
-      {/* 상단바 */}
       <TopBar title="종합 성장 가이드" variant="light" />
 
-      {/* 스크롤 영역 */}
       <main
         style={{ height: `calc(100dvh - ${HEADER_H + FOOTER_H}px)` }}
-        className="overflow-y-auto overflow-x-hidden scroll-smooth flex justify-center px-6 pt-2 pb-4"
+        className="overflow-y-auto overflow-x-hidden scroll-smooth flex justify-center px-6 pt-2 pb-20"
       >
         <div className="w-full max-w-[820px]">
-          <ReportSheet ref={sheetRef} user={user} growth={growth} bmi={bmi} />
-          <div className="mt-4">
+          <ReportSheet
+            ref={sheetRef}
+            user={user}
+            growth={growth}
+            bmi={bmi}
+            analysis={analysis}
+          />
+          <div className="mt-2">
             <Button
               label="PDF 저장하기"
               onClick={downloadPDF}
@@ -252,8 +286,6 @@ export default function Guide() {
           </div>
         </div>
       </main>
-
-      {/* 하단바 */}
       <BottomNav activePage="/guide" />
     </div>
   )
@@ -265,12 +297,14 @@ const ReportSheet = React.forwardRef<
     user: UserInfo | null
     growth: GrowthPoint[]
     bmi?: number
+    analysis: Analysis
   }
->(({ user, growth, bmi }, ref) => {
+>(({ user, growth, bmi, analysis }, ref) => {
   const A4_WIDTH = 794
   const A4_HEIGHT = 1123
-  const latest = growth.length ? growth[growth.length - 1] : null
+  const PADDING = 28
 
+  const latest = growth.length ? growth[growth.length - 1] : null
   const dateText = useMemo(() => (latest?.date ? latest.date.replace(/-/g, '.') : '-'), [latest])
 
   const graphRecords = useMemo(
@@ -291,26 +325,40 @@ const ReportSheet = React.forwardRef<
     [growth]
   )
 
+  const boneAgeText =
+    analysis.boneAgeYears !== undefined
+      ? `${analysis.boneAgeYears.toFixed(1)}세` +
+        (analysis.boneAgeStd ? ` (±${analysis.boneAgeStd.toFixed(1)}년)` : '')
+      : user?.age
+      ? `${(user.age - 0.2).toFixed(1)}세 (추정)`
+      : '-'
+
+  const phvNote = analysis.phvNote ?? 'PHV 시점 약 1년 이내 예상'
+  const postureType = analysis.postureType ?? '정상 체형'
+  const scoliosisRisk = analysis.scoliosisRisk ?? '정상'
+  const cobbText =
+    analysis.scoliosisMainCobb !== undefined ? `${analysis.scoliosisMainCobb.toFixed(1)}°` : '—'
+
   return (
     <div
       ref={ref}
       id="report-sheet"
       className="bg-white rounded-xl border border-gray-200 shadow-sm"
       style={{
-        width: '100%',
-        minHeight: A4_HEIGHT,
-        padding: 24,
-        boxSizing: 'border-box'
+        width: A4_WIDTH,
+        height: A4_HEIGHT,
+        padding: PADDING,
+        boxSizing: 'border-box',
+        margin: '0 auto'
       }}
     >
-      {/* 헤더 */}
       <div className="flex items-start justify-between">
         <div>
           <div className="text-2xl font-extrabold tracking-tight text-gray-900">
             aiCare <span className="text-gray-500 text-sm align-middle">성장 리포트</span>
           </div>
 
-          <div className="mt-2 grid grid-cols-3 gap-x-6 gap-y-1 text-[13px] text-gray-600">
+          <div className="mt-3 grid grid-cols-3 gap-x-6 gap-y-1 text-[13px] text-gray-700">
             <div>
               <span className="text-gray-500">이름</span> : {user?.name ?? '-'}
             </div>
@@ -333,36 +381,86 @@ const ReportSheet = React.forwardRef<
 
       <div className="my-4 h-px bg-gray-200" />
 
-      <div className="grid grid-cols-1 gap-4">
-        <Card title="핵심 지표">
-          <div className="grid grid-cols-3 gap-3">
-            <KPI label="키" value={latest ? `${latest.height.toFixed(1)} cm` : '-'} />
-            <KPI label="체중" value={latest ? `${latest.weight.toFixed(1)} kg` : '-'} />
-            <KPI label="BMI" value={bmi !== undefined ? String(bmi) : '-'} />
-          </div>
-        </Card>
-
-        {/* 키 그래프 */}
-        <GrowthGraph
-          data={graphRecords as any}
-          compact
-          fixedMetric="height"
-          title="키 추이"
-          hideToggle
-        />
-
-        {/* 몸무게 그래프 */}
-        <GrowthGraph
-          data={graphRecords as any}
-          compact
-          fixedMetric="weight"
-          title="몸무게 추이"
-          hideToggle
-        />
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 p-3 text-white">
+        <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-white/10 blur-xl" />
+        <p className="text-[12px] opacity-90">
+          최근 기록과 표준 성장도표를 바탕으로 <span className="font-semibold">핵심 지표</span>와{' '}
+          <span className="font-semibold">예측 인사이트</span>를 요약합니다.
+        </p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px]">데이터 기반</span>
+          <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px]">개인화</span>
+          <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px]">예측 & 가이드</span>
+        </div>
       </div>
 
-      <div className="mt-5 text-[12px] text-gray-500">
-        본 가이드는 정보 입력 및 성장 관리 기록을 바탕으로 산출된 지표입니다.
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <section className="space-y-3">
+          <Card title="핵심 지표">
+            <div className="grid grid-cols-3 gap-2">
+              <KPI label="키" value={latest ? `${latest.height.toFixed(1)} cm` : '-'} />
+              <KPI label="체중" value={latest ? `${latest.weight.toFixed(1)} kg` : '-'} />
+              <KPI label="BMI" value={bmi !== undefined ? String(bmi) : '-'} />
+            </div>
+          </Card>
+
+          <Card title="골격 성숙도 (뼈나이)">
+            <div className="text-[13px] font-semibold text-gray-900">{boneAgeText}</div>
+            <div className="mt-1 text-[12px] text-gray-600">
+              {phvNote}
+              {analysis.notes ? ` · ${analysis.notes}` : ''}
+            </div>
+          </Card>
+        </section>
+
+        <section className="space-y-3">
+          <Card title="이번 주 권장 액션">
+            <div className="text-[13px] font-semibold text-gray-900">
+              주 3회 전신 유산소 30분 + 단백질 섭취 강화
+            </div>
+            <div className="mt-1 text-[12px] text-gray-600">수면 8–9시간, 야식·당분 음료 줄이기</div>
+          </Card>
+
+          <Card title="체형 분석">
+            <div className="text-[13px] font-semibold text-gray-900">{postureType}</div>
+            <div className="mt-1 text-[12px] text-gray-600">
+              척추측만 위험도: {scoliosisRisk}
+              {' · '}주요 Cobb 각도: {cobbText}
+            </div>
+          </Card>
+        </section>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="rounded-xl border border-gray-200 p-2">
+          <h3 className="mb-2 text-[13px] font-semibold text-gray-900">키 추이</h3>
+          <div style={{ height: 200 }}>
+            <GrowthGraph
+              data={graphRecords as any}
+              compact
+              fixedMetric="height"
+              title={undefined}
+              hideToggle
+            />
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 p-2">
+          <h3 className="mb-2 text-[13px] font-semibold text-gray-900">몸무게 추이</h3>
+          <div style={{ height: 200 }}>
+            <GrowthGraph
+              data={graphRecords as any}
+              compact
+              fixedMetric="weight"
+              title={undefined}
+              hideToggle
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-lg bg-gray-50 p-3 text-[11px] text-gray-600">
+        본 리포트는 입력된 정보와 성장 기록, AI 분석 결과를 바탕으로 자동 생성되며 의료적 진단을 대체하지 않습니다.
       </div>
     </div>
   )
@@ -371,8 +469,8 @@ ReportSheet.displayName = 'ReportSheet'
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="border border-gray-200 rounded-xl p-4">
-      <h3 className="text-[15px] font-semibold text-gray-900 mb-2">{title}</h3>
+    <section className="rounded-xl border border-gray-200 p-3">
+      <h3 className="mb-2 text-[13px] font-semibold text-gray-900">{title}</h3>
       {children}
     </section>
   )
@@ -380,9 +478,9 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 function KPI({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-gray-50 px-3 py-3">
-      <div className="text-[15px] text-gray-500 mb-1">{label}</div>
-      <div className="text-[15px] font-semibold text-gray-900 leading-snug">{value}</div>
+    <div className="rounded-lg bg-gray-50 px-3 py-2">
+      <div className="text-[12px] text-gray-500">{label}</div>
+      <div className="text-[14px] font-semibold text-gray-900 leading-snug">{value}</div>
     </div>
   )
 }
