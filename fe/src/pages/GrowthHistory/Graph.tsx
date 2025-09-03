@@ -32,7 +32,7 @@ export default function Graph({
   fixedMetric,
   title,
   hideToggle = false,
-  titleClassName,
+  titleClassName
 }: GraphProps) {
   const [raw, setRaw] = React.useState<GrowthRecord[]>([])
   const [metric, setMetric] = React.useState<Metric>(fixedMetric ?? 'height')
@@ -86,11 +86,24 @@ export default function Graph({
     )
     return sorted
       .map(r => ({
+        date: r.recorded_at,
+        year: dayjs(r.recorded_at).year(),
         label: dayjs(r.recorded_at).format('MM.DD'),
-        value: metric === 'height' ? r.height_cm : r.weight_kg,
+        value: metric === 'height' ? r.height_cm : r.weight_kg
       }))
       .filter(p => Number.isFinite(p.value))
   }, [raw, metric])
+
+  const yearTicks = React.useMemo(() => {
+    const firstIndexByYear = new Map<number, number>()
+    points.forEach((p, i) => {
+      const y = dayjs(p.date).year()
+      if (!firstIndexByYear.has(y)) firstIndexByYear.set(y, i)
+    })
+    return Array.from(firstIndexByYear.entries())
+      .map(([year, index]) => ({ year, index }))
+      .sort((a, b) => a.index - b.index)
+  }, [points])
 
   const futureValues = React.useMemo(() => {
     if (points.length < 2) return []
@@ -101,7 +114,7 @@ export default function Graph({
   }, [points])
 
   const height = compact ? 220 : 260
-  const padding = { top: 18, right: 16, bottom: 18, left: 36 }
+  const padding = { top: 18, right: 16, bottom: 40, left: 36 }
   const innerW = Math.max(0, (w || 600) - padding.left - padding.right)
   const innerH = Math.max(0, height - padding.top - padding.bottom)
   const xInset = 12
@@ -114,8 +127,7 @@ export default function Graph({
   const yMin = Math.max(0, Math.floor(vMin - pad))
   const yMax = Math.ceil(vMax + pad)
 
-  const y = (v: number) =>
-    padding.top + innerH * (1 - (v - yMin) / Math.max(1, yMax - yMin))
+  const y = (v: number) => padding.top + innerH * (1 - (v - yMin) / Math.max(1, yMax - yMin))
   const x = (i: number, total: number) =>
     padding.left + xInset + (total <= 1 ? plotW / 2 : (plotW * i) / (total - 1))
 
@@ -160,26 +172,24 @@ export default function Graph({
 
         {!fixedMetric && !hideToggle && (
           <div className="flex gap-1">
-            {/* 키 버튼 */}
             <button
               className={
                 'h-7 px-3 text-[12px] rounded-md border ' +
                 (metric === 'height'
-                  ? 'bg-white text-black border-black'   // 선택됨: 흰 배경 + 검정 글씨
-                  : 'bg-black text-white border-black')   // 미선택: 검정 배경 + 흰 글씨
+                  ? 'bg-white text-black border-black'
+                  : 'bg-black text-white border-black')
               }
               onClick={() => setMetric('height')}
             >
               키 (cm)
             </button>
 
-            {/* 몸무게 버튼 */}
             <button
               className={
                 'h-7 px-3 text-[12px] rounded-md border ' +
                 (metric === 'weight'
-                  ? 'bg-white text-black border-black'   // 선택됨
-                  : 'bg-black text-white border-black')   // 미선택
+                  ? 'bg-white text-black border-black'
+                  : 'bg-black text-white border-black')
               }
               onClick={() => setMetric('weight')}
             >
@@ -225,6 +235,27 @@ export default function Graph({
               </g>
             ))}
 
+            <line
+              x1={padding.left}
+              x2={padding.left + innerW}
+              y1={padding.top + innerH}
+              y2={padding.top + innerH}
+              stroke="#E5E7EB"
+            />
+
+            {yearTicks.map(t => {
+              const xi = x(t.index, points.length + futureValues.length)
+              const yBase = padding.top + innerH
+              return (
+                <g key={t.year}>
+                  <line x1={xi} x2={xi} y1={yBase} y2={yBase + 8} stroke="#9CA3AF" />
+                  <text x={xi} y={yBase + 24} textAnchor="middle" fontSize="10" fill="#374151">
+                    {t.year}
+                  </text>
+                </g>
+              )
+            })}
+
             <path d={solidPath} fill="none" stroke="#0F172A" strokeWidth={2.5} />
 
             {lastPoint && (
@@ -254,7 +285,9 @@ export default function Graph({
       <div className="mt-4 flex items-center gap-3 text-xs text-slate-600">
         <div className="flex items-center gap-1">
           <span className="inline-block h-[3px] w-6 mx-1 bg-slate-900 rounded" />
-          <span>실측 {metric === 'height' ? '키' : '몸무게'} ({unit})</span>
+          <span>
+            실측 {metric === 'height' ? '키' : '몸무게'} ({unit})
+          </span>
         </div>
         <div className="flex items-center gap-1">
           <span
