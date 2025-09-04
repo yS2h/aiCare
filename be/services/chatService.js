@@ -8,7 +8,6 @@ const {
 const { chat } = require("./openaiService");
 const {
   buildGrowthCoachSystemMessage,
-  OPENING_LINE,
 } = require("../prompts/growthCoachPrompt");
 
 async function getConversationOwned({ conversationId, userId }) {
@@ -138,8 +137,6 @@ async function chatAndStore({
   };
   const messages = [systemMsg, ...recent];
 
-  const hadAssistantBefore = history.some((m) => m.role === "assistant");
-
   const result = await chat({ messages, model, temperature });
 
   const assistantText =
@@ -151,19 +148,10 @@ async function chatAndStore({
             .join("\n")
         : "";
 
-  const needsOpening =
-    !hadAssistantBefore &&
-    typeof assistantText === "string" &&
-    !assistantText.trimStart().startsWith(OPENING_LINE);
-
-  const finalText = needsOpening
-    ? `${OPENING_LINE}\n\n${assistantText}`
-    : assistantText;
-
   await appendMessage({
     conversationId: conv.id,
     role: "assistant",
-    content: finalText,
+    content: assistantText,
     meta: {
       model: result.model,
       finish_reason: result.finish_reason,

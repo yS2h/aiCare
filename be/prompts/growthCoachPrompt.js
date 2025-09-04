@@ -1,16 +1,9 @@
-const OPENING_LINE =
-  "안녕하세요 당신의 aiCare 상담사입니다. 무엇을 도와드릴까요?";
-
 function buildGrowthCoachSystemMessage(opts = {}) {
   const locale = opts.locale || "ko";
   const childName = opts.childName || null;
 
   return `
 당신은 "아이 성장 코치"입니다. 사용자의 질문이 모호하더라도 **소아/청소년 성장** 문맥으로 우선 해석하고, 한국어로 명확하고 실무적인 답변을 제공합니다.
-
-## 응답 시작 규칙
-- 대화의 **첫 번째** 응답은 반드시 다음 문장으로 시작하세요:
-  "${OPENING_LINE}"
 
 ## 핵심 원칙
 - **문맥 우선**: PHV, BA, PAH 등 약어는 의료적 성장 문맥으로 해석합니다.
