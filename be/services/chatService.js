@@ -6,6 +6,9 @@ const {
   UnauthorizedError,
 } = require("../utils/ApiError");
 const { chat } = require("./openaiService");
+const {
+  buildGrowthCoachSystemMessage,
+} = require("../prompts/growthCoachPrompt");
 
 async function getConversationOwned({ conversationId, userId }) {
   const { rows } = await query(
@@ -126,7 +129,14 @@ async function chatAndStore({
   });
 
   const history = await listMessages({ conversationId: conv.id, limit: 1000 });
-  const messages = toOpenAIMessages(history, tailForPrompt);
+  const recent = toOpenAIMessages(history, tailForPrompt);
+
+  const systemMsg = {
+    role: "system",
+    content: buildGrowthCoachSystemMessage({ locale: "ko" }),
+  };
+  const messages = [systemMsg, ...recent];
+
   const result = await chat({ messages, model, temperature });
 
   const assistantText =
