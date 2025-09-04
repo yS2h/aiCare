@@ -1,14 +1,11 @@
-// Spine/SpineExample.tsx
 import { useNavigate, useParams, Navigate } from 'react-router-dom'
 import TopBar from '@/components/Topbar'
 import BottomNav from '@/components/BottomNav'
 import Button from '@/components/Button'
-
 import Img1 from './SpineExample1.png'
 import Img2 from './SpineExample2.png'
 import Img3 from './SpineExample3.png'
 
-// 샘플 데이터
 const EXAMPLES: Record<
   string,
   { takenAt: string; img: string; rows: { id: number; angle: number; apex: string; dir: string }[] }
@@ -42,6 +39,52 @@ const EXAMPLES: Record<
   }
 }
 
+function summarizeCurves(rows: { id: number; angle: number; apex: string; dir: string }[]) {
+  const sorted = [...rows].sort((a, b) => b.angle - a.angle)
+  const primary = sorted[0]
+  const maxAngle = primary?.angle ?? 0
+  return {
+    maxAngle,
+    primaryApex: primary?.apex ?? '-',
+    primaryDir: primary?.dir ?? '-'
+  }
+}
+
+function classifyAngle(angle: number) {
+  if (angle < 5) {
+    return { label: '정상 범위', text: '또래 평균에 가까운 편입니다.' }
+  } else if (angle < 10) {
+    return { label: '경미한 불균형', text: '평균보다 약간 휘어 있습니다.' }
+  } else if (angle < 20) {
+    return { label: '경도', text: '평균보다 분명히 휘어 있습니다.' }
+  } else if (angle < 40) {
+    return { label: '중등도', text: '평균보다 많이 휘어 있습니다.' }
+  }
+  return { label: '중증', text: '평균 대비 크게 휘어 있습니다.' }
+}
+
+function getActions(angle: number) {
+  const base = [
+    '하루 10분 이상 스트레칭으로 척추의 유연성을 유지하세요.',
+    '앉을 때 허리·어깨를 곧게 세우는 습관을 가지세요.',
+    '주 3회 이상 코어 강화 운동(플랭크, 브릿지 등)을 권장합니다.'
+  ]
+
+  if (angle < 5) {
+    base.push('생활습관 점검만으로 충분합니다.')
+  } else if (angle < 10) {
+    base.push('가벼운 교정 운동과 주기적 관찰을 권장합니다.')
+  } else if (angle < 20) {
+    base.push('물리치료·운동 전문가의 상담을 받아보는 것이 좋습니다.')
+  } else if (angle < 40) {
+    base.push('전문의와 상담하여 보조기·운동치료 여부를 검토하세요.')
+  } else {
+    base.push('전문의 진료를 꼭 받아보시길 권장합니다.')
+  }
+
+  return base
+}
+
 export default function SpineExample() {
   const HEADER_H = 64
   const FOOTER_H = 84
@@ -50,6 +93,10 @@ export default function SpineExample() {
 
   const data = (id && EXAMPLES[id]) || null
   if (!data) return <Navigate to="/spine" replace />
+
+  const { maxAngle, primaryApex, primaryDir } = summarizeCurves(data.rows)
+  const level = classifyAngle(maxAngle)
+  const actions = getActions(maxAngle)
 
   return (
     <div className="min-h-screen bg-white flex flex-col overflow-x-hidden">
@@ -61,33 +108,17 @@ export default function SpineExample() {
       >
         <div className="mx-auto max-w-[920px] px-6 pt-2 pb-4">
           <section className="rounded-2xl border border-gray-200 p-4 md:p-5">
-            <div className="flex items-center gap-2">
-              <span className="h-4 w-1.5 rounded-full bg-main" />
-              <h2 className="text-[15px] md:text-[16px] font-semibold text-gray-900">
-                Cobb&apos;s angle 분석 결과
-              </h2>
-            </div>
-
-            {/* 이미지 */}
-            <div className="mt-3 overflow-hidden rounded-xl bg-neutral-900 flex justify-center">
-              <img
-                src={data.img}
-                alt={`Cobb's angle 분석 이미지 ${id}`}
-                className="w-full max-w-[560px] object-contain"
-                loading="lazy"
-              />
-            </div>
-
-            <div className="mt-3 flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                <span className="text-gray-500">촬영일:</span> {data.takenAt}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="h-4 w-1.5 rounded-full bg-main" />
+                <h2 className="text-[15px] md:text-[16px] font-semibold text-gray-900">
+                  Cobb&apos;s angle 분석 결과
+                </h2>
               </div>
-
               <a
                 href={data.img}
                 download={`cobbs-angle-${data.takenAt}-${id}.png`}
-                className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-                aria-label="이미지 다운로드"
+                className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 ml-4"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -107,36 +138,87 @@ export default function SpineExample() {
               </a>
             </div>
 
+            <div className="mt-3 overflow-hidden rounded-xl bg-neutral-900 flex justify-center">
+              <img
+                src={data.img}
+                alt={`Cobb's angle 분석 이미지 ${id}`}
+                className="w-full max-w-[560px] object-contain"
+                loading="lazy"
+              />
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="rounded-xl border border-gray-200 p-4">
+                <div className="text-xs text-gray-500">촬영일</div>
+                <div className="mt-1 text-sm font-medium text-gray-900">{data.takenAt}</div>
+              </div>
+              <div className="rounded-xl border border-gray-200 p-4">
+                <div className="text-xs text-gray-500">대표 곡선</div>
+                <div className="mt-1 text-sm font-medium text-gray-900">
+                  {primaryApex} · {primaryDir}
+                </div>
+              </div>
+              <div className="rounded-xl border border-gray-200 p-4">
+                <div className="text-xs text-gray-500">최대 Cobb 각</div>
+                <div className="mt-1 text-sm font-semibold text-main">{maxAngle.toFixed(1)}°</div>
+              </div>
+            </div>
+
+            {/* 설명 카드 */}
+            <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-5">
+              <p className="text-sm text-gray-800">
+                또래 평균과 비교했을 때 <span className="font-semibold">{level.text}</span>{' '}
+                <span className="ml-1 text-gray-600">({level.label})</span>
+              </p>
+              <p className="mt-2 text-xs text-gray-500">
+                * 이 평가는 참고용이며, 정확한 진단과 처치는 반드시 의료진과 상담하세요.
+              </p>
+            </div>
+
             {/* 분석 테이블 */}
-            <div className="mt-3 overflow-hidden rounded-xl ring-1 ring-gray-200">
+            <div className="mt-4 overflow-hidden rounded-xl ring-1 ring-gray-200">
               <table className="w-full text-sm text-gray-800 text-center">
                 <thead className="bg-gray-50 text-gray-600">
                   <tr>
-                    <th className="px-4 py-3 w-10 font-medium align-middle">#</th>
-                    <th className="px-4 py-3 font-medium align-middle">Cobb&apos;s angle</th>
-                    <th className="px-4 py-3 font-medium align-middle">Apex</th>
-                    <th className="px-4 py-3 font-medium align-middle">휨 방향</th>
+                    <th className="px-4 py-3 w-10 font-medium">#</th>
+                    <th className="px-4 py-3 font-medium">Cobb&apos;s angle</th>
+                    <th className="px-4 py-3 font-medium">Apex</th>
+                    <th className="px-4 py-3 font-medium">휨 방향</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {data.rows.map(r => (
-                    <tr key={r.id} className="bg-white">
-                      <td className="px-5 py-3 text-gray-500 align-middle">{r.id}</td>
-                      <td className="px-5 py-3 font-semibold align-middle">
-                        {r.angle.toFixed(1)}°
-                      </td>
-                      <td className="px-4 py-3 font-semibold align-middle">{r.apex}</td>
-                      <td className="px-4 py-3 font-semibold text-indigo-600 align-middle">
-                        {r.dir}
-                      </td>
+                    <tr key={r.id}>
+                      <td className="px-5 py-3 text-gray-500">{r.id}</td>
+                      <td className="px-5 py-3 font-semibold">{r.angle.toFixed(1)}°</td>
+                      <td className="px-4 py-3 font-semibold">{r.apex}</td>
+                      <td className="px-4 py-3 font-semibold text-indigo-600">{r.dir}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* 뒤로가기 */}
-            <div className="mt-4">
+            <div className="mt-6">
+              <h3 className="text-[15px] md:text-[16px] font-semibold text-gray-900 mb-2">
+                어떤 관리가 필요할까요?
+              </h3>
+              <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700">
+                {actions.map((a, i) => (
+                  <li key={i}>{a}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-main/30 bg-main/5 p-4">
+              <p className="text-sm text-gray-800">
+                <span className="font-semibold">잠재가치는 충분합니다.</span>{' '}
+                지금의 수치가 전부가 아니에요. 생활 습관을 하나씩 정돈하고,
+                기록을 꾸준히 이어가면 분명 좋아질 수 있습니다. <span className="font-medium">포기하지 마세요!</span>
+              </p>
+            </div>
+
+            <div className="mt-6">
               <Button label="목록 이동하기" onClick={() => navigate(-1)} />
             </div>
           </section>
