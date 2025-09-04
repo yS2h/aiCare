@@ -24,7 +24,7 @@ const EXAMPLES: Record<string, Example> = {
     chronAge: '15세 10개월',
     currentHeightCm: 168.2,
     heightPercentile: 60,
-    predictedHeight: '123.2 cm'
+    predictedHeight: '180.2 cm'
   },
   '2': {
     takenAt: '2025-07-28',
@@ -33,7 +33,7 @@ const EXAMPLES: Record<string, Example> = {
     chronAge: '16세 4개월',
     currentHeightCm: 172.1,
     heightPercentile: 75,
-    predictedHeight: '165.1 cm'
+    predictedHeight: '176.1 cm'
   },
   '3': {
     takenAt: '2025-07-15',
@@ -42,7 +42,7 @@ const EXAMPLES: Record<string, Example> = {
     chronAge: '13세 0개월',
     currentHeightCm: 145.0,
     heightPercentile: 20,
-    predictedHeight: '150.4 cm'
+    predictedHeight: '175.4 cm'
   }
 }
 
