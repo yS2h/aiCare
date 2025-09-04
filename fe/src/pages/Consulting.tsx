@@ -11,7 +11,7 @@ const SYSTEM_PROMPT =
 
 const INITIAL_MESSAGES: Msg[] = [
   { id: 'sys', role: 'system', side: 'left', text: SYSTEM_PROMPT },
-  { id: 'a1', role: 'assistant', side: 'left', text: '안녕하세요! 무엇을 도와드릴까요?' },
+  { id: 'a1', role: 'assistant', side: 'left', text: '안녕하세요 당신의 aiCare 상담사입니다. 무엇을 도와드릴까요?' },
 ];
 
 const HEADER_H = 64;     // TopBar 높이
