@@ -95,6 +95,7 @@ AI 분석을 통해 성장 예측 및 맞춤형 관리 가이드를 제공하는
 <img width="619" height="1118" alt="image" src="https://github.com/user-attachments/assets/5e4f7283-56dc-410b-9d5e-4d1dd2efb285" />
 
 - GPT 연동 상담 기능
+- 백엔드단에서 상담 챗봇 프롬프팅 마침 
 - 아이 성장 데이터 기반 맞춤 응답
 - 향후 RAG 기반 맞춤형 의료 상담 시스템으로 확장 가능
 
