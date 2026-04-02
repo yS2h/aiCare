@@ -32,7 +32,9 @@ AI 분석을 통해 성장 예측 및 맞춤형 관리 가이드를 제공하는
 
 ## 🛠️ 기술 스택 
 * **Frontend**: React, TypeScript
-* **Backend / Deployment**: Node.js, Render, Kakao OAuth 2.0, GPT API 
+* **Backend / Deployment**: Node.js
+* **Database**: PostgreSQL, pgAdmin4
+* **Deployment / Auth**: Render, Kakao OAuth 2.0, GPT API
 * **Collaboration tool**: Notion, GitHub
 
 <img width="982" height="1000" alt="image" src="https://github.com/user-attachments/assets/a2b85355-9873-4ea0-87d9-583190b257ca" />
